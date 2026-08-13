@@ -1,0 +1,250 @@
+const Address = require("../models/Address");
+const Customer = require("../models/Customer");
+
+// ───────────────────────────────────────────────────────────────
+// Add Address
+// POST /api/v1/addresses
+// ───────────────────────────────────────────────────────────────
+const addAddress = async (req, res) => {
+  try {
+    const customerId = req.customerId;
+    const customer = await Customer.findById(customerId).select("name mobile").lean();
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer profile not found",
+      });
+    }
+
+    const {
+      alternateMobile,
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      pincode,
+      landmark,
+      addressType,
+      isDefault,
+    } = req.body;
+
+    if (!addressLine1 || !city || !state || !pincode) {
+      return res.status(400).json({
+        success: false,
+        message: "addressLine1, city, state, and pincode are required fields",
+      });
+    }
+
+    const name = customer.name;
+    const mobile = customer.mobile;
+
+    // Check if this is the first address for the customer
+    const existingAddressesCount = await Address.countDocuments({ customer: customerId });
+    let defaultFlag = isDefault === true || isDefault === "true";
+
+    // If first address, it MUST be default
+    if (existingAddressesCount === 0) {
+      defaultFlag = true;
+    }
+
+    // If setting as default, unset other defaults
+    if (defaultFlag) {
+      await Address.updateMany({ customer: customerId }, { isDefault: false });
+    }
+
+    const newAddress = await Address.create({
+      customer: customerId,
+      name: name.trim(),
+      mobile: mobile.trim(),
+      alternateMobile: alternateMobile ? alternateMobile.trim() : undefined,
+      addressLine1: addressLine1.trim(),
+      addressLine2: addressLine2 ? addressLine2.trim() : undefined,
+      city: city.trim(),
+      state: state.trim(),
+      pincode: pincode.trim(),
+      landmark: landmark ? landmark.trim() : undefined,
+      addressType: addressType || "Home",
+      isDefault: defaultFlag,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Address added successfully",
+      data: newAddress,
+    });
+  } catch (error) {
+    console.error("Add Address Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// ───────────────────────────────────────────────────────────────
+// Get All Addresses for Logged-in Customer
+// GET /api/v1/addresses
+// ───────────────────────────────────────────────────────────────
+const getAddresses = async (req, res) => {
+  try {
+    const customerId = req.customerId;
+    const addresses = await Address.find({ customer: customerId }).sort({ isDefault: -1, createdAt: -1 }).lean();
+
+    return res.status(200).json({
+      success: true,
+      data: addresses,
+    });
+  } catch (error) {
+    console.error("Get Addresses Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// ───────────────────────────────────────────────────────────────
+// Get Single Address by ID
+// GET /api/v1/addresses/:id
+// ───────────────────────────────────────────────────────────────
+const getAddressById = async (req, res) => {
+  try {
+    const customerId = req.customerId;
+    const { id } = req.params;
+
+    const address = await Address.findOne({ _id: id, customer: customerId }).lean();
+    if (!address) {
+      return res.status(404).json({
+        success: false,
+        message: "Address not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: address,
+    });
+  } catch (error) {
+    console.error("Get Address By Id Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// ───────────────────────────────────────────────────────────────
+// Update Address
+// PUT /api/v1/addresses/:id
+// ───────────────────────────────────────────────────────────────
+const updateAddress = async (req, res) => {
+  try {
+    const customerId = req.customerId;
+    const { id } = req.params;
+    const {
+      name,
+      mobile,
+      alternateMobile,
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      pincode,
+      landmark,
+      addressType,
+      isDefault,
+    } = req.body;
+
+    const address = await Address.findOne({ _id: id, customer: customerId });
+    if (!address) {
+      return res.status(404).json({
+        success: false,
+        message: "Address not found",
+      });
+    }
+
+    let defaultFlag = isDefault !== undefined ? (isDefault === true || isDefault === "true") : address.isDefault;
+
+    // If updating this address to default, unset other defaults
+    if (defaultFlag && !address.isDefault) {
+      await Address.updateMany({ customer: customerId }, { isDefault: false });
+    }
+
+    // Apply fields
+    if (name) address.name = name.trim();
+    if (mobile) address.mobile = mobile.trim();
+    if (alternateMobile !== undefined) address.alternateMobile = alternateMobile.trim();
+    if (addressLine1) address.addressLine1 = addressLine1.trim();
+    if (addressLine2 !== undefined) address.addressLine2 = addressLine2.trim();
+    if (city) address.city = city.trim();
+    if (state) address.state = state.trim();
+    if (pincode) address.pincode = pincode.trim();
+    if (landmark !== undefined) address.landmark = landmark.trim();
+    if (addressType) address.addressType = addressType;
+    address.isDefault = defaultFlag;
+
+    await address.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Address updated successfully",
+      data: address,
+    });
+  } catch (error) {
+    console.error("Update Address Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// ───────────────────────────────────────────────────────────────
+// Delete Address
+// DELETE /api/v1/addresses/:id
+// ───────────────────────────────────────────────────────────────
+const deleteAddress = async (req, res) => {
+  try {
+    const customerId = req.customerId;
+    const { id } = req.params;
+
+    const address = await Address.findOne({ _id: id, customer: customerId });
+    if (!address) {
+      return res.status(404).json({
+        success: false,
+        message: "Address not found",
+      });
+    }
+
+    const wasDefault = address.isDefault;
+    await address.deleteOne();
+
+    // If we deleted the default address, make another address default (if any exist)
+    if (wasDefault) {
+      const remainingAddress = await Address.findOne({ customer: customerId });
+      if (remainingAddress) {
+        remainingAddress.isDefault = true;
+        await remainingAddress.save();
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Address deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete Address Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+module.exports = {
+  addAddress,
+  getAddresses,
+  getAddressById,
+  updateAddress,
+  deleteAddress,
+};

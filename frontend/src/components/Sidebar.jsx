@@ -1,0 +1,86 @@
+import React from "react";
+import logo from "../assets/image/Keyrank-Logo.png";
+import { useAuth } from "../context/AuthContext";
+import { NAV_CONFIG } from "../config/navigationConfig";
+
+const formatRole = (role) => {
+  if (!role) return "Staff";
+  if (role === "admin") return "Super Admin";
+  return role.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+};
+
+export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
+  const { user } = useAuth();
+  const role = user?.role || "admin";
+  const avatarLetter = user?.name ? user.name.charAt(0).toUpperCase() : "A";
+
+  // Config se filter karo — role ke hisaab se
+  const allowedItems = NAV_CONFIG.filter((item) => item.roles.includes(role));
+
+  // Section wise group karo
+  const sections = allowedItems.reduce((acc, item) => {
+    const existing = acc.find((s) => s.label === item.section);
+    if (existing) {
+      existing.items.push(item);
+    } else {
+      acc.push({ label: item.section, items: [item] });
+    }
+    return acc;
+  }, []);
+
+  return (
+    <aside className={`sidebar ${isOpen ? "open" : ""}`}>
+      {/* Brand */}
+      <div className="sidebar-brand">
+        <div className="sidebar-brand-inner">
+          <div className="sidebar-logo-wrap">
+            <img
+              src={logo}
+              alt="Keyrank"
+              className="sidebar-logo"
+              onError={(e) => { e.target.style.display = "none"; }}
+            />
+          </div>
+          <button className="mobile-close-btn" onClick={onClose} aria-label="Close menu">
+            &times;
+          </button>
+        </div>
+      </div>
+
+      {/* Nav Menu */}
+      <nav className="sidebar-menu">
+        {sections.map((section) => (
+          <div key={section.label}>
+            <div className="sidebar-section-label">{section.label}</div>
+            {section.items.map((item) => (
+              <a
+                key={item.id}
+                href="#"
+                className={`menu-item ${activeTab === item.id ? "active" : ""}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveTab(item.id);
+                  onClose();
+                }}
+              >
+                {item.icon}
+                {item.label}
+              </a>
+            ))}
+          </div>
+        ))}
+      </nav>
+
+      {/* Footer */}
+      <div className="sidebar-footer">
+        <div className="user-profile">
+          <div className="user-avatar">{avatarLetter}</div>
+          <div className="user-info">
+            <span className="user-name">{user?.name || "Admin User"}</span>
+            <span className="user-role">{formatRole(role)}</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
