@@ -92,7 +92,7 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: "http://localhost:5000/api/v1",
+        url: "https://grocery-app-x6gf.onrender.com/api/v1",
         description: "Development server",
       },
     ],
