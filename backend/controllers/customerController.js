@@ -198,6 +198,7 @@ const verifyOTP = async (req, res) => {
           id: customer._id,
           customer_id: customer.customer_id,
           name: customer.name,
+          email: customer.email,
           mobile: customer.mobile,
           role: "customer",
         },
@@ -216,7 +217,148 @@ const verifyOTP = async (req, res) => {
   }
 };
 
+// ─── Get Customer Profile ───────────────────────────────────
+// GET /api/auth/customer/me
+const getCustomerProfile = async (req, res) => {
+  try {
+    const customerId = req.customerId; // populated by verifyCustomerToken
+    const customer = await Customer.findById(customerId).select("-refreshToken -__v");
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        user: {
+          id: customer._id,
+          customer_id: customer.customer_id,
+          name: customer.name,
+          email: customer.email,
+          mobile: customer.mobile,
+          role: "customer",
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Get Customer Profile Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// ───────────────────────────────────────────────────────────────
+// Get All Customers (Admin)
+// GET /api/v1/admin/customers
+// ───────────────────────────────────────────────────────────────
+const getAllCustomers = async (req, res) => {
+  try {
+    const customers = await Customer.find()
+      .select("customer_id name mobile email walletBalance isActive createdAt")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      data: customers,
+    });
+  } catch (error) {
+    console.error("Get All Customers Error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// ───────────────────────────────────────────────────────────────
+// Get Single Customer Details (Admin)
+// GET /api/v1/admin/customers/:id
+// ───────────────────────────────────────────────────────────────
+const getCustomerById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Determine if it's an ObjectId or a custom customer_id string
+    const query = id.startsWith("CUST-") ? { customer_id: id } : { _id: id };
+
+    const customer = await Customer.findOne(query).lean();
+    if (!customer) {
+      return res.status(404).json({ success: false, message: "Customer not found" });
+    }
+
+    // Parallel fetch of related data
+    const Order = require("../models/Order");
+    const Address = require("../models/Address");
+    const WalletTransaction = require("../models/WalletTransaction");
+
+    const [orders, addresses, walletTransactions] = await Promise.all([
+      Order.find({ customer: customer._id }).sort({ createdAt: -1 }).lean(),
+      Address.find({ customer: customer._id }).lean(),
+      WalletTransaction.find({ customer: customer._id }).sort({ createdAt: -1 }).lean(),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        profile: customer,
+        orders,
+        addresses,
+        walletTransactions,
+      },
+    });
+  } catch (error) {
+    console.error("Get Customer Details Error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// ───────────────────────────────────────────────────────────────
+// Toggle Customer Status (Block/Unblock)
+// PATCH /api/v1/admin/customers/:id/toggle-status
+// ───────────────────────────────────────────────────────────────
+const toggleCustomerStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const query = id.startsWith("CUST-") ? { customer_id: id } : { _id: id };
+
+    const customer = await Customer.findOne(query);
+    if (!customer) {
+      return res.status(404).json({ success: false, message: "Customer not found" });
+    }
+
+    customer.isActive = !customer.isActive;
+    
+    // If blocked, optionally invalidate refresh token to force logout
+    if (!customer.isActive) {
+      customer.refreshToken = null;
+    }
+
+    await customer.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Customer ${customer.isActive ? "activated" : "suspended"} successfully`,
+      data: {
+        id: customer.customer_id,
+        name: customer.name,
+        status: customer.isActive ? "Active" : "Suspended",
+      },
+    });
+  } catch (error) {
+    console.error("Toggle Customer Status Error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 module.exports = {
   sendOTP,
   verifyOTP,
+  getCustomerProfile,
+  getAllCustomers,
+  getCustomerById,
+  toggleCustomerStatus,
 };

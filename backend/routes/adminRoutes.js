@@ -1,5 +1,5 @@
 const express = require("express");
-const { createStaff, getAllStaff, editStaff, toggleStaffStatus } = require("../controllers/staffController");
+const { createStaff, getAllStaff, editStaff, toggleStaffStatus, assignWarehouseToStaff } = require("../controllers/staffController");
 const {
   createCategory,
   getAllCategories,
@@ -26,8 +26,178 @@ const {
   deleteProduct,
   toggleProductStatus,
 } = require("../controllers/productController");
+const { getAllOrdersAdmin, approveReturn, markReturned, qcCheck } = require("../controllers/orderController");
+const {
+  createWarehouse,
+  getWarehouses,
+  getWarehouseById,
+  updateWarehouse,
+  deleteWarehouse,
+  toggleWarehouseStatus,
+} = require("../controllers/warehouseController");
+const {
+  getAllCustomers,
+  getCustomerById,
+  toggleCustomerStatus,
+} = require("../controllers/customerController");
+const { getDashboardAnalytics } = require("../controllers/dashboardController");
 
 const router = express.Router();
+
+// ─── Dashboard Routes ────────────────────────────────────────────────────────
+/**
+ * @swagger
+ * tags:
+ *   name: Admin - Dashboard
+ *   description: Admin dashboard analytics
+ */
+
+/**
+ * @swagger
+ * /admin/dashboard:
+ *   get:
+ *     summary: Get overall business and warehouse analytics
+ *     tags: [Admin - Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dashboard stats retrieved
+ */
+router.get("/dashboard", verifyAdminToken, getDashboardAnalytics);
+
+// ─── Customer Routes ─────────────────────────────────────────────────────────
+/**
+ * @swagger
+ * tags:
+ *   name: Admin - Customer
+ *   description: Customer management
+ */
+
+/**
+ * @swagger
+ * /admin/customers:
+ *   get:
+ *     summary: Get all customers
+ *     tags: [Admin - Customer]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Customers retrieved
+ */
+router.get("/customers", verifyAdminToken, getAllCustomers);
+
+/**
+ * @swagger
+ * /admin/customers/{id}:
+ *   get:
+ *     summary: Get single customer details
+ *     tags: [Admin - Customer]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Customer details retrieved
+ */
+router.get("/customers/:id", verifyAdminToken, getCustomerById);
+
+/**
+ * @swagger
+ * /admin/customers/{id}/toggle-status:
+ *   patch:
+ *     summary: Toggle customer status (suspend/activate)
+ *     tags: [Admin - Customer]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Customer status toggled
+ */
+router.patch("/customers/:id/toggle-status", verifyAdminToken, toggleCustomerStatus);
+
+/**
+ * @swagger
+ * /admin/orders/{id}/approve-return:
+ *   put:
+ *     summary: Approve a return request
+ *     tags: [Admin - Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Return approved
+ */
+router.put("/orders/:id/approve-return", verifyAdminToken, approveReturn);
+
+/**
+ * @swagger
+ * /admin/orders/{id}/mark-returned:
+ *   put:
+ *     summary: Mark an order as returned (item collected)
+ *     tags: [Admin - Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Order marked returned
+ */
+router.put("/orders/:id/mark-returned", verifyAdminToken, markReturned);
+
+/**
+ * @swagger
+ * /admin/orders/{id}/qc-check:
+ *   put:
+ *     summary: Perform Quality Check (QC) on returned item
+ *     tags: [Admin - Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               isPassed:
+ *                 type: boolean
+ *               comments:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: QC completed
+ */
+router.put("/orders/:id/qc-check", verifyAdminToken, qcCheck);
 
 // ─── Staff Routes ────────────────────────────────────────────────────────────
 /**
@@ -104,6 +274,37 @@ router.put("/staff/:id", verifyAdminToken, editStaff);
  *         description: Status toggled
  */
 router.patch("/staff/:id/toggle-status", verifyAdminToken, toggleStaffStatus);
+
+/**
+ * @swagger
+ * /admin/staff/{id}/assign-warehouse:
+ *   put:
+ *     summary: Assign a warehouse to a staff member
+ *     tags: [Admin - Staff Management]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Staff ID (STF-XXXX)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               warehouseId:
+ *                 type: string
+ *                 description: Warehouse Document ID (Pass null/empty to unassign)
+ *     responses:
+ *       200:
+ *         description: Warehouse assigned successfully
+ */
+router.put("/staff/:id/assign-warehouse", verifyAdminToken, assignWarehouseToStaff);
 
 // ─── Category Routes ─────────────────────────────────────────────────────────
 /**
@@ -446,5 +647,143 @@ router.delete("/delete-products/:id", verifyAdminToken, deleteProduct);
  *         description: Status toggled
  */
 router.patch("/products/:id/toggle-status", verifyAdminToken, toggleProductStatus);
+
+// ─── Order Routes ────────────────────────────────────────────────────────────
+/**
+ * @swagger
+ * tags:
+ *   name: Admin - Order
+ *   description: Order management
+ */
+
+/**
+ * @swagger
+ * /admin/orders:
+ *   get:
+ *     summary: Get all orders
+ *     tags: [Admin - Order]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Orders retrieved
+ */
+router.get("/orders", verifyAdminToken, getAllOrdersAdmin);
+
+// ─── Warehouse Routes ────────────────────────────────────────────────────────
+/**
+ * @swagger
+ * tags:
+ *   name: Admin - Warehouse
+ *   description: Warehouse management
+ */
+
+/**
+ * @swagger
+ * /admin/warehouses:
+ *   post:
+ *     summary: Create warehouse
+ *     tags: [Admin - Warehouse]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       201:
+ *         description: Warehouse created
+ */
+router.post("/warehouses", verifyAdminToken, createWarehouse);
+
+/**
+ * @swagger
+ * /admin/get-warehouses:
+ *   get:
+ *     summary: Get all warehouses
+ *     tags: [Admin - Warehouse]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Warehouses retrieved
+ */
+router.get("/get-warehouses", verifyAdminToken, getWarehouses);
+
+/**
+ * @swagger
+ * /admin/single-warehouses/{id}:
+ *   get:
+ *     summary: Get single warehouse
+ *     tags: [Admin - Warehouse]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Warehouse retrieved
+ */
+router.get("/single-warehouses/:id", verifyAdminToken, getWarehouseById);
+
+/**
+ * @swagger
+ * /admin/update-warehouses/{id}:
+ *   put:
+ *     summary: Update warehouse
+ *     tags: [Admin - Warehouse]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Warehouse updated
+ */
+router.put("/update-warehouses/:id", verifyAdminToken, updateWarehouse);
+
+/**
+ * @swagger
+ * /admin/delete-warehouses/{id}:
+ *   delete:
+ *     summary: Delete warehouse
+ *     tags: [Admin - Warehouse]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Warehouse deleted
+ */
+router.delete("/delete-warehouses/:id", verifyAdminToken, deleteWarehouse);
+
+/**
+ * @swagger
+ * /admin/warehouses/{id}/toggle-status:
+ *   patch:
+ *     summary: Toggle warehouse status
+ *     tags: [Admin - Warehouse]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Status toggled
+ */
+router.patch("/warehouses/:id/toggle-status", verifyAdminToken, toggleWarehouseStatus);
 
 module.exports = router;

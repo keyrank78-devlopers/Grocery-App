@@ -58,11 +58,23 @@ const addressSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+      coordinates: {
+        type: [Number],
+        required: [true, "Coordinates are required [longitude, latitude]"],
+      },
+    },
   },
   { timestamps: true }
 );
 
 // Indexes: Customer-based index for fast address retrieval
 addressSchema.index({ customer: 1 });
+addressSchema.index({ location: "2dsphere" });
 
 module.exports = mongoose.model("Address", addressSchema);

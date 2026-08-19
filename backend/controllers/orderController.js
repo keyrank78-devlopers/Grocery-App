@@ -33,10 +33,10 @@ const checkout = async (req, res) => {
       });
     }
 
-    if (!["COD", "Online"].includes(paymentMethod)) {
+    if (!["COD", "Online", "Wallet"].includes(paymentMethod)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid payment method. Supported methods: COD, Online",
+        message: "Invalid payment method. Supported methods: COD, Online, Wallet",
       });
     }
 
@@ -86,6 +86,54 @@ const checkout = async (req, res) => {
       });
     }
 
+    if (!address.location || !address.location.coordinates) {
+      return res.status(400).json({
+        success: false,
+        message: "Your address is missing location coordinates. Please update your address or create a new one.",
+      });
+    }
+
+    const [longitude, latitude] = address.location.coordinates;
+
+    // 3.5 Find Serviceable Warehouse using $geoNear
+    const Warehouse = require("../models/Warehouse");
+    const nearestWarehouses = await Warehouse.aggregate([
+      {
+        $geoNear: {
+          near: {
+            type: "Point",
+            coordinates: [longitude, latitude],
+          },
+          distanceField: "distance", // Distance in meters
+          distanceMultiplier: 0.001, // Convert distance to km
+          spherical: true,
+          query: { isActive: true },
+        },
+      },
+      {
+        $match: {
+          $expr: {
+            $lte: ["$distance", "$deliveryRangeKm"], // Compare distance with warehouse specific delivery range
+          },
+        },
+      },
+      {
+        $sort: { distance: 1 },
+      },
+      {
+        $limit: 1,
+      },
+    ]);
+
+    if (!nearestWarehouses || nearestWarehouses.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Sorry, we do not currently deliver to your location. No warehouses in range.",
+      });
+    }
+
+    const assignedWarehouseId = nearestWarehouses[0]._id;
+
     // 4. Verify Stock and calculate pricing details
     const pricingResult = await calculatePricing(cart, couponCode);
     if (!pricingResult.success) {
@@ -121,7 +169,19 @@ const checkout = async (req, res) => {
       addressType: address.addressType,
     };
 
-    // 7. Decrement stock for products (Stock Lock/Reservation)
+    // 7.5 Check Wallet Balance if Wallet payment
+    const Customer = require("../models/Customer");
+    if (paymentMethod === "Wallet") {
+      const customer = await Customer.findOne({ customer_id: customerId });
+      if (!customer || customer.walletBalance < pricingResult.pricing.totalPrice) {
+        return res.status(400).json({
+          success: false,
+          message: "Insufficient wallet balance. Please top up your wallet or choose another payment method.",
+        });
+      }
+    }
+
+    // 8. Decrement stock for products (Stock Lock/Reservation)
     for (const item of cart.items) {
       await Product.findByIdAndUpdate(
         item.product,
@@ -129,9 +189,22 @@ const checkout = async (req, res) => {
       );
     }
 
-    // 8. Handle payment methods
-    if (paymentMethod === "COD") {
-      // For COD, order is placed immediately and cart is cleared
+    // 9. Handle payment methods
+    if (paymentMethod === "COD" || paymentMethod === "Wallet") {
+      // For COD & Wallet, order is placed immediately
+      if (paymentMethod === "Wallet") {
+        const customer = await Customer.findOne({ customer_id: customerId });
+        customer.walletBalance -= pricingResult.pricing.totalPrice;
+        await customer.save();
+
+        const WalletTransaction = require("../models/WalletTransaction");
+        await WalletTransaction.create({
+          customer: customer._id,
+          amount: pricingResult.pricing.totalPrice,
+          type: "Debit",
+          description: `Payment for Order ${order_id}`,
+        });
+      }
       if (pricingResult.coupon) {
         pricingResult.coupon.usedCount += 1;
         await pricingResult.coupon.save();
@@ -140,6 +213,7 @@ const checkout = async (req, res) => {
       const order = await Order.create({
         order_id,
         customer: customerId,
+        assignedWarehouse: assignedWarehouseId,
         items: orderItems,
         shippingAddress: shippingAddressSnapshot,
         pricing: {
@@ -151,14 +225,14 @@ const checkout = async (req, res) => {
           totalPrice: pricingResult.pricing.totalPrice,
         },
         paymentInfo: {
-          method: "COD",
-          status: "Pending",
+          method: paymentMethod,
+          status: paymentMethod === "Wallet" ? "Paid" : "Pending",
         },
         orderStatus: "Placed",
         history: [
           {
             status: "Placed",
-            message: "Order placed successfully (Cash on Delivery).",
+            message: `Order placed successfully (${paymentMethod}).`,
           },
         ],
       });
@@ -204,6 +278,7 @@ const checkout = async (req, res) => {
       const order = await Order.create({
         order_id,
         customer: customerId,
+        assignedWarehouse: assignedWarehouseId,
         items: orderItems,
         shippingAddress: shippingAddressSnapshot,
         pricing: {
@@ -268,6 +343,30 @@ const getOrders = async (req, res) => {
     });
   } catch (error) {
     console.error("Get Orders Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// ───────────────────────────────────────────────────────────────
+// Get All Orders (Admin)
+// GET /api/v1/admin/orders
+// ───────────────────────────────────────────────────────────────
+const getAllOrdersAdmin = async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate("customer", "name email mobile")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      data: orders,
+    });
+  } catch (error) {
+    console.error("Get All Orders Admin Error:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -481,10 +580,184 @@ const handleRazorpayWebhook = async (req, res) => {
   }
 };
 
+// ───────────────────────────────────────────────────────────────
+// Request Order Return (Customer)
+// PUT /api/v1/orders/:id/request-return
+// ───────────────────────────────────────────────────────────────
+const requestReturn = async (req, res) => {
+  try {
+    const customerId = req.customerId;
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({ success: false, message: "Return reason is required" });
+    }
+
+    const order = await Order.findOne({ _id: id, customer: customerId });
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    if (order.orderStatus !== "Delivered") {
+      return res.status(400).json({ success: false, message: "Only delivered orders can be returned" });
+    }
+
+    if (!order.deliveredAt) {
+      return res.status(400).json({ success: false, message: "Delivery date is missing, cannot process return" });
+    }
+
+    const fiveDaysInMillis = 5 * 24 * 60 * 60 * 1000;
+    const timeSinceDelivery = Date.now() - new Date(order.deliveredAt).getTime();
+    if (timeSinceDelivery > fiveDaysInMillis) {
+      return res.status(400).json({ success: false, message: "Return period of 5 days has expired" });
+    }
+
+    order.orderStatus = "Return Requested";
+    order.returnReason = reason;
+    order.history.push({
+      status: "Return Requested",
+      message: `Return requested. Reason: ${reason}`,
+    });
+
+    await order.save();
+    return res.status(200).json({ success: true, message: "Return requested successfully", data: order });
+  } catch (error) {
+    console.error("Request Return Error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// ───────────────────────────────────────────────────────────────
+// Approve Return Request (Admin/Staff)
+// PUT /api/v1/admin/orders/:id/approve-return
+// ───────────────────────────────────────────────────────────────
+const approveReturn = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findById(id);
+
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+    if (order.orderStatus !== "Return Requested") {
+      return res.status(400).json({ success: false, message: "Order is not pending for return approval" });
+    }
+
+    order.orderStatus = "Return Approved";
+    order.history.push({
+      status: "Return Approved",
+      message: "Return request has been approved. Agent will pick up the item soon.",
+    });
+
+    await order.save();
+    return res.status(200).json({ success: true, message: "Return approved successfully", data: order });
+  } catch (error) {
+    console.error("Approve Return Error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// ───────────────────────────────────────────────────────────────
+// Mark Order as Returned (Agent)
+// PUT /api/v1/admin/orders/:id/mark-returned
+// ───────────────────────────────────────────────────────────────
+const markReturned = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findById(id);
+
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+    if (order.orderStatus !== "Return Approved") {
+      return res.status(400).json({ success: false, message: "Order return must be approved first" });
+    }
+
+    order.orderStatus = "Returned";
+    order.returnedAt = new Date();
+    order.history.push({
+      status: "Returned",
+      message: "Item collected by agent and returned to warehouse.",
+    });
+
+    await order.save();
+    return res.status(200).json({ success: true, message: "Order marked as returned", data: order });
+  } catch (error) {
+    console.error("Mark Returned Error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// ───────────────────────────────────────────────────────────────
+// QC Check & Instant Refund (Warehouse Manager/Admin)
+// PUT /api/v1/admin/orders/:id/qc-check
+// ───────────────────────────────────────────────────────────────
+const qcCheck = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isPassed, comments } = req.body;
+    
+    if (isPassed === undefined) {
+      return res.status(400).json({ success: false, message: "isPassed boolean is required" });
+    }
+
+    const order = await Order.findById(id);
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+    if (order.orderStatus !== "Returned") {
+      return res.status(400).json({ success: false, message: "Order must be in 'Returned' state for QC check" });
+    }
+
+    if (!isPassed) {
+      order.orderStatus = "QC Failed";
+      order.history.push({
+        status: "QC Failed",
+        message: `Quality check failed. ${comments ? `Comments: ${comments}` : "Item rejected."}`,
+      });
+      await order.save();
+      return res.status(200).json({ success: true, message: "Order QC Failed. No refund issued.", data: order });
+    }
+
+    // If QC Passed, trigger instant refund to Wallet
+    const Customer = require("../models/Customer");
+    const WalletTransaction = require("../models/WalletTransaction");
+
+    const customer = await Customer.findOne({ customer_id: order.customer });
+    if (!customer) {
+      return res.status(404).json({ success: false, message: "Customer not found, cannot refund" });
+    }
+
+    const refundAmount = order.pricing.totalPrice;
+    customer.walletBalance += refundAmount;
+    await customer.save();
+
+    await WalletTransaction.create({
+      customer: customer._id,
+      amount: refundAmount,
+      type: "Credit",
+      description: `Refund for Order ${order.order_id}`,
+      referenceOrder: order._id,
+    });
+
+    order.orderStatus = "Refunded";
+    order.history.push({
+      status: "Refunded",
+      message: "Quality check passed. Refund processed to wallet successfully.",
+    });
+
+    await order.save();
+    return res.status(200).json({ success: true, message: "QC Passed and Refund issued successfully", data: order });
+  } catch (error) {
+    console.error("QC Check Error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 module.exports = {
   checkout,
   getOrders,
   getOrderById,
   verifyPayment,
   handleRazorpayWebhook,
+  getAllOrdersAdmin,
+  requestReturn,
+  approveReturn,
+  markReturned,
+  qcCheck,
 };

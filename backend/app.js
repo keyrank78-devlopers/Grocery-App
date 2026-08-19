@@ -12,6 +12,7 @@ const cartRoutes = require("./routes/cartRoutes");
 const addressRoutes = require("./routes/addressRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const couponRoutes = require("./routes/couponRoutes");
+const walletRoutes = require("./routes/walletRoutes");
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 
@@ -40,7 +41,7 @@ app.use(
 // 3. Rate Limiter: General limiter for all requests (100 requests per 1 minute per IP)
 const generalLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 150,
+  max: 60,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -80,6 +81,7 @@ app.use("/api/v1/cart", cartRoutes);
 app.use("/api/v1/addresses", addressRoutes);
 app.use("/api/v1/orders", orderRoutes);
 app.use("/api/v1/coupons", couponRoutes);
+app.use("/api/v1/wallet", walletRoutes);
 
 // ─── Swagger Documentation ──────────────────────────────────────────────────
 const swaggerOptions = {

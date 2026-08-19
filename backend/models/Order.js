@@ -12,6 +12,10 @@ const orderSchema = new mongoose.Schema(
       ref: "Customer",
       required: [true, "Customer reference is required"],
     },
+    assignedWarehouse: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Warehouse",
+    },
     items: [
       {
         product: {
@@ -80,7 +84,7 @@ const orderSchema = new mongoose.Schema(
     paymentInfo: {
       method: {
         type: String,
-        enum: ["COD", "Online"],
+        enum: ["COD", "Online", "Wallet"],
         default: "COD",
       },
       status: {
@@ -107,9 +111,24 @@ const orderSchema = new mongoose.Schema(
     },
     orderStatus: {
       type: String,
-      enum: ["Pending", "Placed", "Processing", "Shipped", "Delivered", "Cancelled"],
+      enum: [
+        "Pending",
+        "Placed",
+        "Accepted",
+        "Processing",
+        "Out for Delivery",
+        "Delivered",
+        "Cancelled",
+        "Return Requested",
+        "Return Approved",
+        "Returned",
+        "QC Failed",
+        "Refunded",
+      ],
       default: "Pending",
     },
+    deliveredAt: { type: Date },
+    returnReason: { type: String },
     history: [
       {
         status: { type: String, required: true },

@@ -7,6 +7,7 @@ const {
   deleteCoupon,
   toggleCouponStatus,
   applyCoupon,
+  getActiveCoupons,
 } = require("../controllers/couponController");
 const { verifyAdminToken, verifyCustomerToken } = require("../middleware/auth");
 
@@ -144,5 +145,19 @@ router.patch("/admin/:id/toggle-status", verifyAdminToken, toggleCouponStatus);
  *         description: Coupon applied successfully
  */
 router.post("/apply", verifyCustomerToken, applyCoupon);
+
+/**
+ * @swagger
+ * /coupons/active:
+ *   get:
+ *     summary: Get all active coupons (Customer)
+ *     tags: [Coupon]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Active coupons retrieved
+ */
+router.get("/active", verifyCustomerToken, getActiveCoupons);
 
 module.exports = router;

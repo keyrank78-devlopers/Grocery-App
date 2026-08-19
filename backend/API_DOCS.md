@@ -1926,5 +1926,94 @@ Base URL for coupon operations: `/api/v1/coupons`
   "message": "Minimum purchase amount of Rs 500 is required to apply this coupon"
 }
 ```
+
+---
+
+## 13. WALLET APIs (Customer)
+
+### 13.1 Get Wallet Balance
+**GET** `/wallet/balance`
+> **Headers:** `Authorization: Bearer <customer_token>`
+
+**Success Response** `200`:
+```json
+{
+  "success": true,
+  "data": {
+    "balance": 500,
+    "transactions": []
+  }
+}
 ```
 
+### 13.2 Initialize Top-up
+**POST** `/wallet/topup`
+> **Headers:** `Authorization: Bearer <customer_token>`
+
+**Request Body:**
+```json
+{ "amount": 500 }
+```
+
+### 13.3 Verify Top-up
+**POST** `/wallet/verify-topup`
+**Request Body:**
+```json
+{
+  "razorpay_order_id": "order_...",
+  "razorpay_payment_id": "pay_...",
+  "razorpay_signature": "...",
+  "amount": 500
+}
+```
+
+---
+
+## 14. ORDER RETURNS & QC APIs
+
+### 14.1 Request Return (Customer)
+**PUT** `/orders/:id/request-return`
+> **Headers:** `Authorization: Bearer <customer_token>`
+
+**Request Body:**
+```json
+{ "reason": "Item defective" }
+```
+
+### 14.2 Approve Return (Admin/Staff)
+**PUT** `/admin/orders/:id/approve-return`
+
+### 14.3 Mark Returned (Agent)
+**PUT** `/admin/orders/:id/mark-returned`
+
+### 14.4 QC Check & Refund (Warehouse Manager)
+**PUT** `/admin/orders/:id/qc-check`
+> **Headers:** `Authorization: Bearer <admin_or_staff_token>`
+
+**Request Body:**
+```json
+{ 
+  "isPassed": true, 
+  "comments": "Item intact, eligible for refund" 
+}
+```
+
+---
+
+## 15. ADMIN ANALYTICS & CUSTOMERS
+
+### 15.1 Admin Dashboard (Papa Boss View)
+**GET** `/admin/dashboard`
+> **Headers:** `Authorization: Bearer <admin_token>`
+
+**Success Response:** Returns `systemStats` and `warehouseAnalytics`.
+
+### 15.2 Get All Customers
+**GET** `/admin/customers`
+
+### 15.3 Get Single Customer (360° Profile)
+**GET** `/admin/customers/:id`
+**Returns:** Profile, Orders, Addresses, Wallet Transactions.
+
+### 15.4 Suspend/Unsuspend Customer
+**PATCH** `/admin/customers/:id/toggle-status`

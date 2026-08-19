@@ -17,9 +17,20 @@ const customerSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
+    email: {
+      type: String,
+      lowercase: true,
+      trim: true,
+      default: "",
+    },
     isActive: {
       type: Boolean,
       default: true,
+    },
+    walletBalance: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     refreshToken: {
       type: String,

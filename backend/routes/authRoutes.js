@@ -1,7 +1,7 @@
 const express = require("express");
 const { adminRegister, login, refreshAccessToken, logout, getMe } = require("../controllers/adminController");
-const { sendOTP, verifyOTP } = require("../controllers/customerController");
-const { verifyAdminToken, verifyStaffToken } = require("../middleware/auth");
+const { sendOTP, verifyOTP, getCustomerProfile } = require("../controllers/customerController");
+const { verifyAdminToken, verifyStaffToken, verifyCustomerToken } = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -156,5 +156,22 @@ router.post("/customer/send-otp", sendOTP);
  */
 // POST /api/auth/customer/verify-otp (Verify OTP and register/login customer)
 router.post("/customer/verify-otp", verifyOTP);
+
+/**
+ * @swagger
+ * /auth/customer/me:
+ *   get:
+ *     summary: Get customer profile
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Returns customer profile
+ *       401:
+ *         description: Unauthorized
+ */
+// GET /api/auth/customer/me (Get customer profile)
+router.get("/customer/me", verifyCustomerToken, getCustomerProfile);
 
 module.exports = router;

@@ -5,6 +5,7 @@ const {
   getOrderById,
   verifyPayment,
   handleRazorpayWebhook,
+  requestReturn,
 } = require("../controllers/orderController");
 const { verifyCustomerToken } = require("../middleware/auth");
 
@@ -28,6 +29,35 @@ const router = express.Router();
  *         description: Webhook received successfully
  */
 router.post("/razorpay-webhook", handleRazorpayWebhook);
+
+/**
+ * @swagger
+ * /orders/{id}/request-return:
+ *   put:
+ *     summary: Request return for a delivered order
+ *     tags: [Order]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Return requested
+ */
+router.put("/:id/request-return", verifyCustomerToken, requestReturn);
 
 // Apply strict customer token verification for all other order/checkout endpoints
 router.use(verifyCustomerToken);

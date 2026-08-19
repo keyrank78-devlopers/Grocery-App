@@ -5,7 +5,7 @@ const generateCustomId = require("../utils/generateCustomId");
 // POST /api/admin/staff/create
 const createStaff = async (req, res) => {
   try {
-    const { name, email, phone, password, role, address } = req.body;
+    const { name, email, phone, password, role, address, assignedWarehouse } = req.body;
 
     if (!name || !email || !phone || !password || !role || !address) {
       return res.status(400).json({
@@ -51,6 +51,7 @@ const createStaff = async (req, res) => {
         landmark: landmark.trim(),
       },
       createdBy: req.admin._id,
+      assignedWarehouse: assignedWarehouse || null,
     });
 
     return res.status(201).json({
@@ -63,6 +64,7 @@ const createStaff = async (req, res) => {
         phone: newStaff.phone,
         role: newStaff.role,
         address: newStaff.address,
+        assignedWarehouse: newStaff.assignedWarehouse,
         createdBy: newStaff.createdBy,
         createdAt: newStaff.createdAt,
       },
@@ -103,8 +105,9 @@ const getAllStaff = async (req, res) => {
       role: 1,
       address: 1,
       isActive: 1,
+      assignedWarehouse: 1,
       createdAt: 1,
-    }).lean();
+    }).populate("assignedWarehouse", "name warehouse_id").lean();
 
     const formatted = staffList.map((s) => ({
       id: s.staff_id,
@@ -113,6 +116,7 @@ const getAllStaff = async (req, res) => {
       mobile: s.phone,
       role: s.role,
       city: s.address?.city || "",
+      assignedWarehouse: s.assignedWarehouse ? { id: s.assignedWarehouse._id, name: s.assignedWarehouse.name, warehouse_id: s.assignedWarehouse.warehouse_id } : null,
       status: s.isActive === false ? "Suspended" : "Active",
       createdAt: s.createdAt,
     }));
@@ -135,7 +139,7 @@ const getAllStaff = async (req, res) => {
 const editStaff = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, phone, role, address } = req.body;
+    const { name, email, phone, role, address, assignedWarehouse } = req.body;
 
     const member = await Staff.findOne({ staff_id: id });
     if (!member) {
@@ -146,6 +150,7 @@ const editStaff = async (req, res) => {
     if (name) member.name = name.trim();
     if (phone) member.phone = phone.trim();
     if (role) member.role = role;
+    if (assignedWarehouse !== undefined) member.assignedWarehouse = assignedWarehouse || null;
 
     if (email) {
       const normalizedEmail = email.trim().toLowerCase();
@@ -177,6 +182,7 @@ const editStaff = async (req, res) => {
         email: member.email,
         mobile: member.phone,
         role: member.role,
+        assignedWarehouse: member.assignedWarehouse,
         city: member.address?.city || "",
         status: member.isActive === false ? "Suspended" : "Active",
       },
@@ -216,13 +222,50 @@ const toggleStaffStatus = async (req, res) => {
 };
 
 
-// edit stuff api
+// ─── Assign Warehouse To Staff ──────────────────────────────────────────
+// PUT /api/admin/staff/:id/assign-warehouse
+const assignWarehouseToStaff = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { warehouseId } = req.body;
 
+    const member = await Staff.findOne({ staff_id: id });
+    if (!member) {
+      return res.status(404).json({ success: false, message: "Staff member not found" });
+    }
 
+    if (warehouseId) {
+      const Warehouse = require("../models/Warehouse");
+      const warehouseExists = await Warehouse.findById(warehouseId);
+      if (!warehouseExists) {
+        return res.status(404).json({ success: false, message: "Warehouse not found" });
+      }
+      member.assignedWarehouse = warehouseId;
+    } else {
+      member.assignedWarehouse = null;
+    }
+
+    await member.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Warehouse successfully ${warehouseId ? "assigned" : "unassigned"} for staff member`,
+      data: {
+        id: member.staff_id,
+        name: member.name,
+        assignedWarehouse: member.assignedWarehouse,
+      },
+    });
+  } catch (error) {
+    console.error("Assign Warehouse Error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
 
 module.exports = {
   createStaff,
   getAllStaff,
   editStaff,
   toggleStaffStatus,
+  assignWarehouseToStaff,
 };

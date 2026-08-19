@@ -313,6 +313,34 @@ const applyCoupon = async (req, res) => {
   }
 };
 
+// Get Active Coupons (Customer)
+// GET /api/v1/coupons/active
+const getActiveCoupons = async (req, res) => {
+  try {
+    const currentDate = new Date();
+    const activeCoupons = await Coupon.find({
+      isActive: true,
+      expiryDate: { $gt: currentDate },
+      $or: [
+        { startDate: { $exists: false } },
+        { startDate: null },
+        { startDate: { $lte: currentDate } }
+      ]
+    }).select("-__v").sort({ expiryDate: 1 }).lean();
+
+    return res.status(200).json({
+      success: true,
+      data: activeCoupons,
+    });
+  } catch (error) {
+    console.error("Get Active Coupons Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error fetching active coupons",
+    });
+  }
+};
+
 module.exports = {
   createCoupon,
   getAllCoupons,
@@ -321,4 +349,5 @@ module.exports = {
   deleteCoupon,
   toggleCouponStatus,
   applyCoupon,
+  getActiveCoupons,
 };

@@ -26,12 +26,14 @@ const addAddress = async (req, res) => {
       landmark,
       addressType,
       isDefault,
+      longitude,
+      latitude,
     } = req.body;
 
-    if (!addressLine1 || !city || !state || !pincode) {
+    if (!addressLine1 || !city || !state || !pincode || longitude === undefined || latitude === undefined) {
       return res.status(400).json({
         success: false,
-        message: "addressLine1, city, state, and pincode are required fields",
+        message: "addressLine1, city, state, pincode, longitude, and latitude are required fields",
       });
     }
 
@@ -65,6 +67,10 @@ const addAddress = async (req, res) => {
       landmark: landmark ? landmark.trim() : undefined,
       addressType: addressType || "Home",
       isDefault: defaultFlag,
+      location: {
+        type: "Point",
+        coordinates: [Number(longitude), Number(latitude)],
+      },
     });
 
     return res.status(201).json({
@@ -153,6 +159,8 @@ const updateAddress = async (req, res) => {
       landmark,
       addressType,
       isDefault,
+      longitude,
+      latitude,
     } = req.body;
 
     const address = await Address.findOne({ _id: id, customer: customerId });
@@ -181,6 +189,12 @@ const updateAddress = async (req, res) => {
     if (pincode) address.pincode = pincode.trim();
     if (landmark !== undefined) address.landmark = landmark.trim();
     if (addressType) address.addressType = addressType;
+    if (longitude !== undefined && latitude !== undefined) {
+      address.location = {
+        type: "Point",
+        coordinates: [Number(longitude), Number(latitude)],
+      };
+    }
     address.isDefault = defaultFlag;
 
     await address.save();
