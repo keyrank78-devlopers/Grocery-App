@@ -203,8 +203,8 @@ router.put("/orders/:id/qc-check", verifyAdminToken, qcCheck);
 /**
  * @swagger
  * tags:
- *   name: Admin - Staff
- *   description: Staff management
+ *   name: Staff Management & Authentication
+ *   description: Staff management and authentication APIs
  */
 
 /**
@@ -212,7 +212,7 @@ router.put("/orders/:id/qc-check", verifyAdminToken, qcCheck);
  * /admin/create-staff:
  *   post:
  *     summary: Create staff
- *     tags: [Admin - Staff]
+ *     tags: [Staff Management & Authentication]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -226,7 +226,7 @@ router.post("/create-staff", verifyAdminToken, createStaff);
  * /admin/get-staff:
  *   get:
  *     summary: Get all staff
- *     tags: [Admin - Staff]
+ *     tags: [Staff Management & Authentication]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -240,7 +240,7 @@ router.get("/get-staff", verifyAdminToken, getAllStaff);
  * /admin/staff/{id}:
  *   put:
  *     summary: Edit staff
- *     tags: [Admin - Staff]
+ *     tags: [Staff Management & Authentication]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -260,7 +260,7 @@ router.put("/staff/:id", verifyAdminToken, editStaff);
  * /admin/staff/{id}/toggle-status:
  *   patch:
  *     summary: Toggle staff status
- *     tags: [Admin - Staff]
+ *     tags: [Staff Management & Authentication]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -280,7 +280,7 @@ router.patch("/staff/:id/toggle-status", verifyAdminToken, toggleStaffStatus);
  * /admin/staff/{id}/assign-warehouse:
  *   put:
  *     summary: Assign a warehouse to a staff member
- *     tags: [Admin - Staff Management]
+ *     tags: [Staff Management & Authentication]
  *     security:
  *       - bearerAuth: []
  *     parameters:

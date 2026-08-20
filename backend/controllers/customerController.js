@@ -29,14 +29,6 @@ const sendOTP = async (req, res) => {
       .select("_id")
       .lean();
 
-    if (!customer && !name) {
-      return res.status(400).json({
-        success: false,
-        message: "Name is required for registration",
-        isNewUser: true,
-      });
-    }
-
     const otp = generate6DigitOTP();
 
     await OTP.findOneAndUpdate(
@@ -45,7 +37,6 @@ const sendOTP = async (req, res) => {
       },
       {
         otp,
-        name: name?.trim() || "",
         expiresAt: new Date(Date.now() + 5 * 60 * 1000),
       },
       {
@@ -117,18 +108,11 @@ const verifyOTP = async (req, res) => {
     });
 
     if (!customer) {
-      if (!otpDoc.name) {
-        return res.status(400).json({
-          success: false,
-          message: "Name required",
-        });
-      }
-
       const customer_id = await generateCustomId("Customer", "CUS");
 
       customer = await Customer.create({
         customer_id,
-        name: otpDoc.name,
+        name: "",
         mobile: normalizedMobile,
       });
     }
@@ -253,6 +237,50 @@ const getCustomerProfile = async (req, res) => {
   }
 };
 
+// ─── Update Customer Profile ────────────────────────────────
+// PUT /api/auth/customer/update-profile
+const updateCustomerProfile = async (req, res) => {
+  try {
+    const customerId = req.customerId; // populated by verifyCustomerToken
+    const { name, email } = req.body;
+
+    const customer = await Customer.findById(customerId);
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found",
+      });
+    }
+
+    if (name) customer.name = name.trim();
+    if (email !== undefined) customer.email = email.trim();
+
+    await customer.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      data: {
+        user: {
+          id: customer._id,
+          customer_id: customer.customer_id,
+          name: customer.name,
+          email: customer.email,
+          mobile: customer.mobile,
+          role: "customer",
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Update Customer Profile Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 // ───────────────────────────────────────────────────────────────
 // Get All Customers (Admin)
 // GET /api/v1/admin/customers
@@ -358,6 +386,7 @@ module.exports = {
   sendOTP,
   verifyOTP,
   getCustomerProfile,
+  updateCustomerProfile,
   getAllCustomers,
   getCustomerById,
   toggleCustomerStatus,

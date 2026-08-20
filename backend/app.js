@@ -98,6 +98,12 @@ const swaggerOptions = {
         description: "Development server",
       },
     ],
+    tags: [
+      { name: "Admin Authentication", description: "APIs for Admin registration and login" },
+      { name: "Staff Management & Authentication", description: "APIs for Staff registration (creation) and login" },
+      { name: "Customer Authentication", description: "APIs for Customer registration, login and profile update" },
+      { name: "Common Authentication", description: "APIs shared between roles, like refresh token and logout" }
+    ],
     components: {
       securitySchemes: {
         bearerAuth: {

@@ -1,23 +1,18 @@
 const express = require("express");
 const { adminRegister, login, refreshAccessToken, logout, getMe } = require("../controllers/adminController");
-const { sendOTP, verifyOTP, getCustomerProfile } = require("../controllers/customerController");
+const { sendOTP, verifyOTP, getCustomerProfile, updateCustomerProfile } = require("../controllers/customerController");
 const { verifyAdminToken, verifyStaffToken, verifyCustomerToken } = require("../middleware/auth");
 
 const router = express.Router();
 
-/**
- * @swagger
- * tags:
- *   name: Auth
- *   description: Authentication APIs for Admins, Staff, and Customers
- */
+
 
 /**
  * @swagger
  * /auth/register:
  *   post:
  *     summary: Admin registration
- *     tags: [Auth]
+ *     tags: [Admin Authentication]
  *     requestBody:
  *       required: true
  *       content:
@@ -50,7 +45,7 @@ router.post("/register", adminRegister);
  * /auth/login:
  *   post:
  *     summary: Unified login for Admin, Sub Admin, Agent, Warehouse Manager, Accountant
- *     tags: [Auth]
+ *     tags: [Admin Authentication, Staff Management & Authentication]
  *     requestBody:
  *       required: true
  *       content:
@@ -75,7 +70,7 @@ router.post("/login", login);
  * /auth/refresh-token:
  *   post:
  *     summary: Get new access token using refresh token
- *     tags: [Auth]
+ *     tags: [Common Authentication]
  *     responses:
  *       200:
  *         description: Token refreshed successfully
@@ -88,7 +83,7 @@ router.post("/refresh-token", refreshAccessToken);
  * /auth/logout:
  *   post:
  *     summary: Session logout / invalidate refresh token
- *     tags: [Auth]
+ *     tags: [Common Authentication]
  *     responses:
  *       200:
  *         description: Logout successful
@@ -101,7 +96,7 @@ router.post("/logout", logout);
  * /auth/me:
  *   get:
  *     summary: Check active user session profile
- *     tags: [Auth]
+ *     tags: [Staff Management & Authentication]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -116,13 +111,14 @@ router.get("/me", verifyStaffToken, getMe);
  * /auth/customer/send-otp:
  *   post:
  *     summary: Send OTP for customer registration / login
- *     tags: [Auth]
+ *     tags: [Customer Authentication]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [mobile]
  *             properties:
  *               mobile:
  *                 type: string
@@ -138,7 +134,7 @@ router.post("/customer/send-otp", sendOTP);
  * /auth/customer/verify-otp:
  *   post:
  *     summary: Verify OTP and register/login customer
- *     tags: [Auth]
+ *     tags: [Customer Authentication]
  *     requestBody:
  *       required: true
  *       content:
@@ -162,7 +158,7 @@ router.post("/customer/verify-otp", verifyOTP);
  * /auth/customer/me:
  *   get:
  *     summary: Get customer profile
- *     tags: [Auth]
+ *     tags: [Customer Authentication]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -173,5 +169,33 @@ router.post("/customer/verify-otp", verifyOTP);
  */
 // GET /api/auth/customer/me (Get customer profile)
 router.get("/customer/me", verifyCustomerToken, getCustomerProfile);
+
+/**
+ * @swagger
+ * /auth/customer/profile:
+ *   put:
+ *     summary: Update customer profile
+ *     tags: [Customer Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *       401:
+ *         description: Unauthorized
+ */
+// PUT /api/auth/customer/profile (Update customer profile)
+router.put("/customer/profile", verifyCustomerToken, updateCustomerProfile);
 
 module.exports = router;

@@ -12,7 +12,7 @@ Authorization: Bearer <accessToken>
 
 ---
 
-## 1. AUTH APIs
+### 1. ADMIN AUTHENTICATION
 
 ### 1.1 Admin Register
 
@@ -55,7 +55,7 @@ Authorization: Bearer <accessToken>
 
 ---
 
-### 1.2 Login (Admin + Staff)
+### 1.2 Admin Login
 
 **POST** `/auth/login`
 
@@ -68,7 +68,7 @@ Authorization: Bearer <accessToken>
 }
 ```
 
-**Success Response** `200` (Admin):
+**Success Response** `200`:
 
 ```json
 {
@@ -88,33 +88,6 @@ Authorization: Bearer <accessToken>
 }
 ```
 
-**Success Response** `200` (Staff):
-
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "user": {
-      "id": "STF-000001",
-      "name": "Rahul Sharma",
-      "email": "rahul@example.com",
-      "mobile": "9123456789",
-      "role": "sub_admin",
-      "address": {
-        "street": "123 Main St",
-        "city": "Mumbai",
-        "state": "Maharashtra",
-        "pincode": "400001",
-        "landmark": "Near Station"
-      }
-    },
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
-}
-```
-
 **Error Responses:**
 | Status | Message |
 |--------|---------|
@@ -125,140 +98,12 @@ Authorization: Bearer <accessToken>
 
 ---
 
-### 1.3 Refresh Access Token
+## 2. STAFF MANAGEMENT & AUTHENTICATION
 
-**POST** `/auth/refresh-token`
-
-**Request Body:**
-
-```json
-{
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-**Success Response** `200`:
-
-```json
-{
-  "success": true,
-  "message": "Token refreshed successfully",
-  "data": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
-}
-```
-
-> **Note:** Every refresh issues a new token pair (rotation). Store both tokens on frontend.
-
-**Error Responses:**
-| Status | Message |
-|--------|---------|
-| 400 | Refresh token is required |
-| 401 | Invalid or expired refresh token |
-| 401 | Refresh token mismatch or user not found |
-| 403 | Your account is deactivated. Please contact admin. |
-| 500 | Internal server error |
-
----
-
-### 1.4 Customer — Send OTP
-
-**POST** `/auth/customer/send-otp`
-
-**Request Body (Existing Customer):**
-
-```json
-{
-  "mobile": "9876543210"
-}
-```
-
-**Request Body (New Customer):**
-
-```json
-{
-  "mobile": "9876543210",
-  "name": "Ravi Kumar"
-}
-```
-
-**Success Response** `200`:
-
-```json
-{
-  "success": true,
-  "message": "OTP sent successfully",
-  "otp": "482910"
-}
-```
-
-> `otp` field only visible in `development` mode. Hidden in production.
-
-**Error Responses:**
-| Status | Message |
-|--------|---------|
-| 400 | Mobile number is required |
-| 400 | Name is required for registration (new user without name) |
-| 500 | Internal server error |
-
----
-
-### 1.5 Customer — Verify OTP
-
-**POST** `/auth/customer/verify-otp`
-
-**Request Body:**
-
-```json
-{
-  "mobile": "9876543210",
-  "otp": "482910"
-}
-```
-
-**Success Response** `200`:
-
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "user": {
-      "id": "68abc123...",
-      "customer_id": "CUS-000001",
-      "name": "Ravi Kumar",
-      "mobile": "9876543210",
-      "role": "customer"
-    },
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
-}
-```
-
-**Error Responses:**
-| Status | Message |
-|--------|---------|
-| 400 | Mobile number and OTP are required |
-| 400 | Invalid OTP |
-| 400 | OTP expired |
-| 400 | Name required |
-| 403 | Account inactive |
-| 500 | Internal server error |
-
----
-
-## 2. ADMIN APIs
-
-> All routes below require: `Authorization: Bearer <accessToken>` (Admin only)
-
----
-
-### 2.1 Create Staff
+### 2.1 Create Staff (Register)
 
 **POST** `/admin/create-staff`
+> **Headers:** `Authorization: Bearer <admin_token>`
 
 **Request Body:**
 
@@ -317,7 +162,217 @@ Authorization: Bearer <accessToken>
 
 ---
 
-## 3. CATEGORY APIs
+### 2.2 Staff Login
+
+**POST** `/auth/login`
+
+**Request Body:**
+
+```json
+{
+  "email": "rahul@example.com",
+  "password": "Staff@123"
+}
+```
+
+**Success Response** `200`:
+
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "user": {
+      "id": "STF-000001",
+      "name": "Rahul Sharma",
+      "email": "rahul@example.com",
+      "mobile": "9123456789",
+      "role": "sub_admin",
+      "address": {
+        "street": "123 Main St",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "pincode": "400001",
+        "landmark": "Near Station"
+      }
+    },
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+**Error Responses:**
+| Status | Message |
+|--------|---------|
+| 400 | Email and password are required |
+| 401 | Invalid email or password |
+| 403 | Your account is deactivated. Please contact admin. |
+| 500 | Internal server error |
+
+---
+
+## 3. CUSTOMER AUTHENTICATION
+
+### 3.1 Customer — Send OTP
+
+**POST** `/auth/customer/send-otp`
+
+**Request Body:**
+
+```json
+{
+  "mobile": "9876543210"
+}
+```
+
+**Success Response** `200`:
+
+```json
+{
+  "success": true,
+  "message": "OTP sent successfully",
+  "otp": "482910"
+}
+```
+
+> `otp` field only visible in `development` mode. Hidden in production.
+
+**Error Responses:**
+| Status | Message |
+|--------|---------|
+| 400 | Mobile number is required |
+| 500 | Internal server error |
+
+---
+
+### 3.2 Customer — Verify OTP
+
+**POST** `/auth/customer/verify-otp`
+
+**Request Body:**
+
+```json
+{
+  "mobile": "9876543210",
+  "otp": "482910"
+}
+```
+
+**Success Response** `200`:
+
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "user": {
+      "id": "68abc123...",
+      "customer_id": "CUS-000001",
+      "name": "Ravi Kumar",
+      "mobile": "9876543210",
+      "role": "customer"
+    },
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+**Error Responses:**
+| Status | Message |
+|--------|---------|
+| 400 | Mobile number and OTP are required |
+| 400 | Invalid OTP |
+| 400 | OTP expired |
+| 403 | Account inactive |
+| 500 | Internal server error |
+
+---
+
+### 3.3 Customer — Update Profile
+
+**PUT** `/auth/customer/profile`
+> **Headers:** `Authorization: Bearer <customer_token>`
+
+**Request Body:**
+
+```json
+{
+  "name": "Ravi Kumar",
+  "email": "ravi@example.com"
+}
+```
+
+**Success Response** `200`:
+
+```json
+{
+  "success": true,
+  "message": "Profile updated successfully",
+  "data": {
+    "user": {
+      "id": "68abc123...",
+      "customer_id": "CUS-000001",
+      "name": "Ravi Kumar",
+      "email": "ravi@example.com",
+      "mobile": "9876543210",
+      "role": "customer"
+    }
+  }
+}
+```
+
+**Error Responses:**
+| Status | Message |
+|--------|---------|
+| 401 | Unauthorized / Invalid Token |
+| 404 | Customer not found |
+| 500 | Internal server error |
+
+---
+
+## 4. COMMON AUTH APIs
+
+### 4.1 Refresh Access Token
+
+**POST** `/auth/refresh-token`
+
+**Request Body:**
+
+```json
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Success Response** `200`:
+
+```json
+{
+  "success": true,
+  "message": "Token refreshed successfully",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+> **Note:** Every refresh issues a new token pair (rotation). Store both tokens on frontend.
+
+**Error Responses:**
+| Status | Message |
+|--------|---------|
+| 400 | Refresh token is required |
+| 401 | Invalid or expired refresh token |
+| 401 | Refresh token mismatch or user not found |
+| 403 | Your account is deactivated. Please contact admin. |
+| 500 | Internal server error |
+
+---
+
+## 5. CATEGORY APIs
 
 > All routes require: `Authorization: Bearer <accessToken>` (Admin only)
 
@@ -2017,3 +2072,7 @@ Base URL for coupon operations: `/api/v1/coupons`
 
 ### 15.4 Suspend/Unsuspend Customer
 **PATCH** `/admin/customers/:id/toggle-status`
+
+
+ 
+ 
