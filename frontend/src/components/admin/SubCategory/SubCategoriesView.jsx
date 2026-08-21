@@ -192,7 +192,6 @@ export default function SubCategoriesView() {
       <div className="page-header">
         <div className="page-header-content">
           <h2>Sub-Category Management</h2>
-          <p className="page-subtitle">Manage sub-categories under each category</p>
         </div>
         <button className="btn btn-primary" onClick={() => setIsAddOpen(true)}>
           + Add Sub-Category

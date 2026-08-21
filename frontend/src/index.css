@@ -464,18 +464,18 @@ h1, h2, h3, h4, h5, h6 {
 
 .data-table th,
 .data-table td {
-  padding: 14px 20px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--border-light);
   vertical-align: middle;
 }
 
 .data-table th {
-  background-color: var(--bg-tertiary);
-  font-weight: 600;
-  font-size: 11px;
+  background-color: #f8fafc;
+  font-weight: 700;
+  font-size: 11.5px;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  color: #475569;
   white-space: nowrap;
 }
 
@@ -484,7 +484,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .data-table tbody tr:hover td {
-  background-color: #fafbfc;
+  background-color: #f8fafc;
 }
 
 .data-table tr:last-child td {
@@ -1015,41 +1015,50 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ─── FORM CONTROLS ─────────────────────────────────────────────────────── */
-.form-group { margin-bottom: 18px; }
+.form-group { margin-bottom: 22px; }
 
 .form-group label {
   display: block;
   font-weight: 600;
-  font-size: 13px;
-  margin-bottom: 7px;
+  font-size: 13.5px;
+  margin-bottom: 8px;
   color: var(--text-secondary);
+  letter-spacing: -0.01em;
 }
 
-.form-group input[type="text"],
-.form-group input[type="email"],
-.form-group input[type="number"],
-.form-group input[type="tel"],
-.form-group input[type="password"],
-.form-group input[type="file"],
-.form-group select,
-.form-group textarea {
+input[type="text"],
+input[type="email"],
+input[type="number"],
+input[type="tel"],
+input[type="password"],
+input[type="file"],
+select,
+textarea {
   width: 100%;
-  padding: 10px 14px;
-  border: 1px solid var(--border-color);
+  padding: 12px 16px;
+  border: 1px solid #cbd5e1;
   border-radius: var(--radius-md);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 14px;
   outline: none;
   background-color: var(--bg-secondary);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: all var(--transition-fast);
   color: var(--text-main);
+  box-shadow: var(--shadow-xs);
 }
 
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: #94a3b8;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.14);
+  background-color: #fff;
 }
 
 input:-webkit-autofill,
@@ -1387,4 +1396,30 @@ input:-webkit-autofill:focus {
 @keyframes slideInRight {
   from { transform: translateX(120%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
+}
+
+/* ─── GLOBAL FORM GRID LAYOUT ───────────────────────────────────────────── */
+.staff-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 992px) {
+  .staff-form-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
 }

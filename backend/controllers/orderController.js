@@ -2,6 +2,7 @@ const Order = require("../models/Order");
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 const Address = require("../models/Address");
+const Customer = require("../models/Customer");
 const generateCustomId = require("../utils/generateCustomId");
 const { calculatePricing } = require("../utils/pricingHelper");
 const crypto = require("crypto");
@@ -356,17 +357,172 @@ const getOrders = async (req, res) => {
 // ───────────────────────────────────────────────────────────────
 const getAllOrdersAdmin = async (req, res) => {
   try {
-    const orders = await Order.find()
-      .populate("customer", "name email mobile")
-      .sort({ createdAt: -1 })
-      .lean();
+    const { search, orderStatus, paymentStatus, paymentMethod, page = 1, limit = 10 } = req.query;
+
+    const filter = {};
+
+    // 1. Order Status Filter
+    if (orderStatus) {
+      filter.orderStatus = orderStatus;
+    }
+
+    // 2. Payment Status Filter
+    if (paymentStatus) {
+      filter["paymentInfo.status"] = paymentStatus;
+    }
+
+    // 3. Payment Method Filter
+    if (paymentMethod) {
+      filter["paymentInfo.method"] = paymentMethod;
+    }
+
+    // 4. Search Filter (matches order_id, recipient shipping name/mobile, or customer profile info)
+    if (search) {
+      const searchRegex = new RegExp(search.trim(), "i");
+      
+      // Find matching customer IDs first
+      const matchingCustomers = await Customer.find({
+        $or: [
+          { name: searchRegex },
+          { mobile: searchRegex },
+          { email: searchRegex }
+        ]
+      }).select("_id");
+
+      const customerIds = matchingCustomers.map(c => c._id);
+
+      filter.$or = [
+        { order_id: searchRegex },
+        { "shippingAddress.name": searchRegex },
+        { "shippingAddress.mobile": searchRegex },
+        { customer: { $in: customerIds } }
+      ];
+    }
+
+    // Pagination setup
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [orders, total] = await Promise.all([
+      Order.find(filter)
+        .populate("customer", "name email mobile")
+        .populate("items.product", "sku image")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Order.countDocuments(filter),
+    ]);
 
     return res.status(200).json({
       success: true,
       data: orders,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      }
     });
   } catch (error) {
     console.error("Get All Orders Admin Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// Get Single Order (Admin)
+// GET /api/v1/admin/orders/:id
+const getOrderByIdAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const query = {};
+    if (id.startsWith("ORD-")) {
+      query.order_id = id;
+    } else {
+      query._id = id;
+    }
+
+    const order = await Order.findOne(query)
+      .populate("customer", "name email mobile")
+      .populate("items.product", "sku image")
+      .lean();
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: order,
+    });
+  } catch (error) {
+    console.error("Get Order By ID Admin Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// Update Order Status (Admin)
+// PUT /api/v1/admin/orders/:id/status
+const updateOrderStatusAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { orderStatus, paymentStatus } = req.body;
+
+    const query = {};
+    if (id.startsWith("ORD-")) {
+      query.order_id = id;
+    } else {
+      query._id = id;
+    }
+
+    const order = await Order.findOne(query);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    if (orderStatus) {
+      order.orderStatus = orderStatus;
+      order.history.push({
+        status: orderStatus,
+        message: `Order status updated to ${orderStatus} by Admin.`,
+      });
+      if (orderStatus === "Delivered") {
+        order.deliveredAt = new Date();
+      }
+    }
+
+    if (paymentStatus) {
+      order.paymentInfo.status = paymentStatus;
+    }
+
+    await order.save();
+
+    const populatedOrder = await Order.findById(order._id)
+      .populate("customer", "name email mobile")
+      .populate("items.product", "sku image")
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      message: "Order updated successfully",
+      data: populatedOrder,
+    });
+  } catch (error) {
+    console.error("Update Order Status Error:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -756,6 +912,8 @@ module.exports = {
   verifyPayment,
   handleRazorpayWebhook,
   getAllOrdersAdmin,
+  getOrderByIdAdmin,
+  updateOrderStatusAdmin,
   requestReturn,
   approveReturn,
   markReturned,

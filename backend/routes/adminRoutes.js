@@ -26,7 +26,7 @@ const {
   deleteProduct,
   toggleProductStatus,
 } = require("../controllers/productController");
-const { getAllOrdersAdmin, approveReturn, markReturned, qcCheck } = require("../controllers/orderController");
+const { getAllOrdersAdmin, getOrderByIdAdmin, updateOrderStatusAdmin, approveReturn, markReturned, qcCheck } = require("../controllers/orderController");
 const {
   createWarehouse,
   getWarehouses,
@@ -669,6 +669,8 @@ router.patch("/products/:id/toggle-status", verifyAdminToken, toggleProductStatu
  *         description: Orders retrieved
  */
 router.get("/orders", verifyAdminToken, getAllOrdersAdmin);
+router.get("/orders/:id", verifyAdminToken, getOrderByIdAdmin);
+router.put("/orders/:id/status", verifyAdminToken, updateOrderStatusAdmin);
 
 // ─── Warehouse Routes ────────────────────────────────────────────────────────
 /**

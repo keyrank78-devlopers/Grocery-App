@@ -175,7 +175,7 @@ export default function CategoriesView() {
       <div className="page-header">
         <div className="page-header-content">
           <h2>Category Management</h2>
-          <p className="page-subtitle">Organize and manage your product categories</p>
+
         </div>
         <button className="btn btn-primary" onClick={() => setIsAddOpen(true)}>
           + Add Category

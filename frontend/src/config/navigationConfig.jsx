@@ -5,7 +5,7 @@ const DashboardView     = lazy(() => import("../components/DashboardView"));
 const CategoriesView    = lazy(() => import("../components/admin/Category/CategoriesView"));
 const SubcategoriesView = lazy(() => import("../components/admin/SubCategory/SubCategoriesView"));
 const ProductsView      = lazy(() => import("../components/admin/Product/ProductsView"));
-const OrdersView        = lazy(() => import("../components/OrdersView"));
+const OrdersView        = lazy(() => import("../components/admin/Order/OrdersView"));
 const StaffView         = lazy(() => import("../components/admin/stuff/StaffView"));
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -94,7 +94,7 @@ export const NAV_CONFIG = [
     section: "Operations",
     icon: Icons.orders,
     component: OrdersView,
-    roles: ["sub_admin", "accountant", "agent"],
+    roles: ["admin", "sub_admin", "accountant", "agent"],
     defaultFor: ["agent"],
   },
   {

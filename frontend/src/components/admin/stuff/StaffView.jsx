@@ -283,7 +283,7 @@ export default function StaffView() {
         <div className="page-header">
           <div className="page-header-content">
             <h2>Staff & User Management</h2>
-            <p className="page-subtitle">Manage team members, roles, and access permissions</p>
+
           </div>
           <button className="btn btn-primary" onClick={() => setIsCreating(true)}>
             + Add Member

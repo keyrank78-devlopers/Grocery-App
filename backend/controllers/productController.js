@@ -416,15 +416,42 @@ const updateProduct = async (req, res) => {
       product.image = newMainImage;
     }
 
-    if (newOtherImages.length > 0) {
-      if (product.images && product.images.length > 0) {
-        for (const img of product.images) {
-          if (img.public_id) {
+    // Handle additional images: retain selected existing ones, delete others, and append new uploads
+    let remainingImages = [];
+    if (req.body.remainingImages !== undefined) {
+      try {
+        remainingImages = typeof req.body.remainingImages === "string" 
+          ? JSON.parse(req.body.remainingImages) 
+          : req.body.remainingImages;
+        if (!Array.isArray(remainingImages)) remainingImages = [];
+      } catch (err) {
+        console.error("Parse remainingImages error:", err);
+      }
+    } else {
+      remainingImages = product.images || [];
+    }
+
+    const remainingPublicIds = remainingImages.map(img => typeof img === "string" ? img : img.public_id);
+    const keptImages = [];
+
+    if (product.images && product.images.length > 0) {
+      for (const img of product.images) {
+        if (img.public_id && remainingPublicIds.includes(img.public_id)) {
+          keptImages.push(img);
+        } else if (img.public_id) {
+          try {
             await deleteFromCloudinary(img.public_id, "image");
+          } catch (delErr) {
+            console.error("Failed to delete removed image from Cloudinary during update:", img.public_id, delErr);
           }
         }
       }
-      product.images = newOtherImages;
+    }
+
+    if (newOtherImages.length > 0) {
+      product.images = [...keptImages, ...newOtherImages];
+    } else {
+      product.images = keptImages;
     }
 
     if (newVideo) {

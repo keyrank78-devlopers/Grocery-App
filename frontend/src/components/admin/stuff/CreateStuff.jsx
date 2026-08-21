@@ -88,7 +88,7 @@ export default function CreateStuff({ onCancel, onSuccess }) {
             <div className="page-header">
                 <div className="page-header-content">
                     <h2>Add New Staff Member</h2>
-                    <p className="page-subtitle">Fill in the details to onboard a new team member</p>
+
                 </div>
                 <button type="button" className="btn btn-outline" onClick={onCancel}>
                     ← Back to List
