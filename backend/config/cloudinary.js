@@ -36,6 +36,34 @@ const uploadCategoryImage = multer({
   },
 }).single("image");
 
+// Storage for banner images (preserves aspect ratio)
+const bannerStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "banners",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+    transformation: [{ quality: "auto" }],
+  },
+});
+
+const uploadBannerImage = multer({
+  storage: bannerStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  fileFilter: (_req, file, cb) => {
+    const allowedMimetypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/x-png"];
+    const allowedExtensions = /\.(jpg|jpeg|png|webp)$/i;
+
+    const validMime = allowedMimetypes.includes(file.mimetype);
+    const validExt = allowedExtensions.test(file.originalname);
+
+    if (validMime || validExt) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only jpg, jpeg, png, webp images are allowed"), false);
+    }
+  },
+}).single("image");
+
 const uploadToCloudinary = (fileBuffer, folder, resourceType = "auto") => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
@@ -69,4 +97,10 @@ const deleteFromCloudinary = async (publicId, resourceType = "image") => {
   }
 };
 
-module.exports = { cloudinary, uploadCategoryImage, uploadToCloudinary, deleteFromCloudinary };
+module.exports = {
+  cloudinary,
+  uploadCategoryImage,
+  uploadBannerImage,
+  uploadToCloudinary,
+  deleteFromCloudinary,
+};

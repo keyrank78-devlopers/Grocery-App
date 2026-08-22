@@ -136,7 +136,8 @@ customerSwaggerSpec.tags = [
   { name: "Common Authentication", description: "APIs shared between roles, like refresh token" },
   { name: "Admin - Category", description: "APIs for viewing categories" },
   { name: "Admin - Sub-Category", description: "APIs for viewing subcategories" },
-  { name: "Admin - Product", description: "APIs for viewing products" }
+  { name: "Admin - Product", description: "APIs for viewing products" },
+  { name: "Admin - Banner", description: "APIs for viewing banners" }
 ];
 
 // Limit to only the paths requested by the user for Customer docs
@@ -149,7 +150,9 @@ const customerPaths = [
   "/admin/get-categories",
   "/admin/get-sub-categories",
   "/admin/get-products",
-  "/admin/single-products/{id}"
+  "/admin/single-products/{id}",
+  "/admin/get-banners",
+  "/admin/single-banners/{id}"
 ];
 
 customerSwaggerSpec.paths = {};

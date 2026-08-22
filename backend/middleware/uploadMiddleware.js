@@ -1,9 +1,21 @@
 const multer = require("multer");
-const { uploadCategoryImage } = require("../config/cloudinary");
+const { uploadCategoryImage, uploadBannerImage } = require("../config/cloudinary");
 
 // Wraps multer upload in a promise so errors can be caught cleanly in controllers
 const handleCategoryImageUpload = (req, res, next) => {
   uploadCategoryImage(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message || "Image upload failed",
+      });
+    }
+    next();
+  });
+};
+
+const handleBannerImageUpload = (req, res, next) => {
+  uploadBannerImage(req, res, (err) => {
     if (err) {
       return res.status(400).json({
         success: false,
@@ -101,4 +113,4 @@ const handleProductUpload = (req, res, next) => {
   });
 };
 
-module.exports = { handleCategoryImageUpload, handleProductUpload };
+module.exports = { handleCategoryImageUpload, handleProductUpload, handleBannerImageUpload };

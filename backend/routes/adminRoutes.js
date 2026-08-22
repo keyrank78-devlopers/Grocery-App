@@ -17,7 +17,16 @@ const {
   toggleSubCategoryStatus,
 } = require("../controllers/subCategoryController");
 const { verifyAdminToken } = require("../middleware/auth");
-const { handleCategoryImageUpload, handleProductUpload } = require("../middleware/uploadMiddleware");
+const { handleCategoryImageUpload, handleProductUpload, handleBannerImageUpload } = require("../middleware/uploadMiddleware");
+const {
+  createBanner,
+  getAllBannersAdmin,
+  getActiveBannersPublic,
+  getBannerById,
+  updateBanner,
+  deleteBanner,
+  toggleBannerStatus,
+} = require("../controllers/bannerController");
 const {
   createProduct,
   getAllProducts,
@@ -787,5 +796,198 @@ router.delete("/delete-warehouses/:id", verifyAdminToken, deleteWarehouse);
  *         description: Status toggled
  */
 router.patch("/warehouses/:id/toggle-status", verifyAdminToken, toggleWarehouseStatus);
+
+// ─── Banner Routes ───────────────────────────────────────────────────────────
+/**
+ * @swagger
+ * tags:
+ *   name: Admin - Banner
+ *   description: Banner management
+ */
+
+/**
+ * @swagger
+ * /admin/banners:
+ *   post:
+ *     summary: Create a banner
+ *     tags: [Admin - Banner]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *                 description: Banner image file
+ *     responses:
+ *       201:
+ *         description: Banner created successfully
+ *       400:
+ *         description: Bad request (missing image)
+ */
+router.post("/banners", verifyAdminToken, handleBannerImageUpload, createBanner);
+
+/**
+ * @swagger
+ * /admin/banners:
+ *   get:
+ *     summary: Get all banners (Admin panel)
+ *     tags: [Admin - Banner]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of banners per page
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, inactive]
+ *         description: Filter by status
+ *     responses:
+ *       200:
+ *         description: Banners retrieved
+ */
+router.get("/banners", verifyAdminToken, getAllBannersAdmin);
+
+/**
+ * @swagger
+ * /admin/get-banners:
+ *   get:
+ *     summary: Get active banners (Public)
+ *     tags: [Admin - Banner]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of banners per page
+ *     responses:
+ *       200:
+ *         description: Active banners retrieved
+ */
+router.get("/get-banners", getActiveBannersPublic);
+
+/**
+ * @swagger
+ * /admin/single-banners/{id}:
+ *   get:
+ *     summary: Get a single active banner
+ *     tags: [Admin - Banner]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Banner ID (BAN-XXXXXX)
+ *     responses:
+ *       200:
+ *         description: Banner details retrieved
+ *       404:
+ *         description: Banner not found or inactive
+ */
+router.get("/single-banners/:id", getBannerById);
+
+/**
+ * @swagger
+ * /admin/update-banners/{id}:
+ *   put:
+ *     summary: Update banner details or image
+ *     tags: [Admin - Banner]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Banner ID (BAN-XXXXXX)
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *                 description: New banner image file (optional)
+ *               isActive:
+ *                 type: string
+ *                 enum: [true, false]
+ *                 description: Banner active status (optional)
+ *     responses:
+ *       200:
+ *         description: Banner updated successfully
+ *       404:
+ *         description: Banner not found
+ */
+router.put("/update-banners/:id", verifyAdminToken, handleBannerImageUpload, updateBanner);
+
+/**
+ * @swagger
+ * /admin/delete-banners/{id}:
+ *   delete:
+ *     summary: Delete banner
+ *     tags: [Admin - Banner]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Banner ID (BAN-XXXXXX)
+ *     responses:
+ *       200:
+ *         description: Banner deleted successfully
+ *       404:
+ *         description: Banner not found
+ */
+router.delete("/delete-banners/:id", verifyAdminToken, deleteBanner);
+
+/**
+ * @swagger
+ * /admin/banners/{id}/toggle-status:
+ *   patch:
+ *     summary: Toggle banner status
+ *     tags: [Admin - Banner]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Banner ID (BAN-XXXXXX)
+ *     responses:
+ *       200:
+ *         description: Banner status toggled successfully
+ *       404:
+ *         description: Banner not found
+ */
+router.patch("/banners/:id/toggle-status", verifyAdminToken, toggleBannerStatus);
 
 module.exports = router;
