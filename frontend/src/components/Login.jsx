@@ -32,14 +32,15 @@ export default function Login() {
       // Handle successful login
       showToast("Sign in successful! Redirecting...", "success");
 
-      // Extract user details and accessToken from response
+      // Extract user details and accessToken/refreshToken from response
       const responseData = response.data?.data || {};
       const userData = responseData.user || null;
       const accessToken = responseData.accessToken || null;
+      const refreshToken = responseData.refreshToken || null;
 
       setTimeout(() => {
-        // Save to in-memory React Context
-        login(userData, accessToken);
+        // Save to in-memory React Context and localStorage
+        login(userData, accessToken, refreshToken);
       }, 1500);
     }
     catch (error) {

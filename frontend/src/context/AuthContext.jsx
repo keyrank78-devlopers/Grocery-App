@@ -9,9 +9,16 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(null);
-  const [user, setUser] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [token, setToken] = useState(() => localStorage.getItem("token") || null);
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem("user");
+    try {
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem("token"));
   const [loading, setLoading] = useState(true);
 
   // Ref to avoid multiple simultaneous refresh calls
@@ -29,6 +36,21 @@ export function AuthProvider({ children }) {
     });
     failedQueue.current = [];
   };
+
+  // ── Axios Request Interceptor — Attach Authorization Header ──────────
+  useEffect(() => {
+    const requestInterceptor = axios.interceptors.request.use(
+      (config) => {
+        const activeToken = token || localStorage.getItem("token");
+        if (activeToken) {
+          config.headers.Authorization = `Bearer ${activeToken}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+    return () => axios.interceptors.request.eject(requestInterceptor);
+  }, [token]);
 
   // ── Axios Interceptor — Auto Refresh Token ──────────────────────────
   useEffect(() => {
@@ -58,13 +80,30 @@ export function AuthProvider({ children }) {
           isRefreshing.current = true;
 
           try {
-            // Call refresh-token API — cookie automatically sent
-            await axios.post(`${BASE_URL}/auth/refresh-token`, {}, { withCredentials: true });
+            // Call refresh-token API — fallback to body parameter in case cookies are blocked
+            const savedRefreshToken = localStorage.getItem("refreshToken");
+            const res = await axios.post(`${BASE_URL}/auth/refresh-token`, {
+              refreshToken: savedRefreshToken
+            }, { withCredentials: true });
 
-            // New access token is now set in cookie by backend
+            // Extract the new tokens
+            const newAccessToken = res.data?.data?.accessToken;
+            const newRefreshToken = res.data?.data?.refreshToken;
+
+            if (newAccessToken) {
+              setToken(newAccessToken);
+              localStorage.setItem("token", newAccessToken);
+            }
+            if (newRefreshToken) {
+              localStorage.setItem("refreshToken", newRefreshToken);
+            }
+
             processQueue(null);
 
-            // Retry the original failed request
+            // Retry the original failed request with the new Authorization header
+            if (newAccessToken) {
+              originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            }
             return axios(originalRequest);
           } catch (refreshError) {
             // Refresh token bhi expire ho gaya → force logout
@@ -72,6 +111,9 @@ export function AuthProvider({ children }) {
             setUser(null);
             setToken(null);
             setIsLoggedIn(false);
+            localStorage.removeItem("token");
+            localStorage.removeItem("refreshToken");
+            localStorage.removeItem("user");
             return Promise.reject(refreshError);
           } finally {
             isRefreshing.current = false;
@@ -95,9 +137,18 @@ export function AuthProvider({ children }) {
           const userData = response.data.data.user;
           setUser(userData);
           setIsLoggedIn(true);
+          localStorage.setItem("user", JSON.stringify(userData));
         }
       } catch (err) {
         console.log("Session verification: No active session cookie found.");
+        if (err.response?.status === 401) {
+          setUser(null);
+          setToken(null);
+          setIsLoggedIn(false);
+          localStorage.removeItem("token");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("user");
+        }
       } finally {
         setLoading(false);
       }
@@ -106,10 +157,19 @@ export function AuthProvider({ children }) {
     checkActiveSession();
   }, []);
 
-  const login = (userData, userToken) => {
+  const login = (userData, userToken, userRefreshToken) => {
     setUser(userData);
     setToken(userToken);
     setIsLoggedIn(true);
+    if (userToken) {
+      localStorage.setItem("token", userToken);
+    }
+    if (userRefreshToken) {
+      localStorage.setItem("refreshToken", userRefreshToken);
+    }
+    if (userData) {
+      localStorage.setItem("user", JSON.stringify(userData));
+    }
   };
 
   const logout = async () => {
@@ -121,6 +181,9 @@ export function AuthProvider({ children }) {
       setUser(null);
       setToken(null);
       setIsLoggedIn(false);
+      localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
     }
   };
 
