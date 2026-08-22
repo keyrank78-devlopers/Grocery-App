@@ -13,6 +13,14 @@ export default function SubCategoriesView() {
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // ── Filters State ──────────────────────────────────────────────
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [parentCatFilter, setParentCatFilter] = useState("");
 
   // ── Add Modal ──────────────────────────────────────────────────
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -29,12 +37,31 @@ export default function SubCategoriesView() {
   // ── Delete Confirm Modal ───────────────────────────────────────
   const [deleteSub, setDeleteSub] = useState(null);
 
+  // Debounce search string (500ms delay)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
   // ── Fetch SubCategories ────────────────────────────────────────
   const fetchSubCategories = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${BASE_URL}/admin/get-sub-categories`, { withCredentials: true });
+      const res = await axios.get(`${BASE_URL}/admin/get-sub-categories`, {
+        params: { 
+          page, 
+          limit: 10,
+          search: debouncedSearch,
+          status: statusFilter,
+          category_id: parentCatFilter
+        },
+        withCredentials: true 
+      });
       setSubCategories(res.data.data || []);
+      setTotalPages(res.data.pagination?.totalPages || 1);
     } catch (err) {
       console.error(err);
       showToast("Failed to load sub-categories", "error");
@@ -54,9 +81,12 @@ export default function SubCategoriesView() {
   };
 
   useEffect(() => {
-    fetchSubCategories();
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    fetchSubCategories();
+  }, [page, debouncedSearch, statusFilter, parentCatFilter]);
 
   // ── Add SubCategory ────────────────────────────────────────────
   const handleAdd = async (e) => {
@@ -74,7 +104,7 @@ export default function SubCategoriesView() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      setSubCategories((prev) => [res.data.data, ...prev]);
+      fetchSubCategories();
       setAddForm({ name: "", category_id: "" });
       setAddImage(null);
       setIsAddOpen(false);
@@ -138,7 +168,7 @@ export default function SubCategoriesView() {
         `${BASE_URL}/admin/delete-sub-categories/${deleteSub.sub_category_id}`,
         { withCredentials: true }
       );
-      setSubCategories((prev) => prev.filter((s) => s.sub_category_id !== deleteSub.sub_category_id));
+      fetchSubCategories();
       setDeleteSub(null);
       showToast("Sub-category deleted successfully!", "success");
     } catch (err) {
@@ -196,6 +226,67 @@ export default function SubCategoriesView() {
         <button className="btn btn-primary" onClick={() => setIsAddOpen(true)}>
           + Add Sub-Category
         </button>
+      </div>
+
+      {/* ── Filter Toolbar ── */}
+      <div style={{ display: "flex", gap: "16px", marginBottom: "20px", flexWrap: "wrap", alignItems: "center" }}>
+        {/* Search */}
+        <div style={{ flex: "1", minWidth: "200px", position: "relative" }}>
+          <input
+            type="text"
+            placeholder="Search sub-categories..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: "100%", padding: "10px 14px 10px 36px" }}
+          />
+          <svg width="16" height="16" fill="none" stroke="var(--text-muted)" viewBox="0 0 24 24" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }}>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+
+        {/* Parent Category Filter */}
+        <div style={{ minWidth: "180px" }}>
+          <select
+            value={parentCatFilter}
+            onChange={(e) => { setParentCatFilter(e.target.value); setPage(1); }}
+            style={{ width: "100%", cursor: "pointer", height: "42px", padding: "10px 14px" }}
+          >
+            <option value="">All Categories</option>
+            {categories.map((cat) => (
+              <option key={cat.category_id} value={cat.category_id}>{cat.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Status Filter */}
+        <div style={{ minWidth: "140px" }}>
+          <select
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+            style={{ width: "100%", cursor: "pointer", height: "42px", padding: "10px 14px" }}
+          >
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+
+        {/* Clear Filters */}
+        {(searchTerm || statusFilter || parentCatFilter) && (
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() => {
+              setSearchTerm("");
+              setStatusFilter("");
+              setParentCatFilter("");
+              setPage(1);
+            }}
+            style={{ height: "42px", padding: "0 18px", borderRadius: "8px", border: "1px solid var(--border-color)", fontSize: "13px", fontWeight: "600", cursor: "pointer", backgroundColor: "var(--bg-secondary)" }}
+          >
+            Clear Filters
+          </button>
+        )}
       </div>
 
       {/* ── Table ── */}
@@ -267,6 +358,33 @@ export default function SubCategoriesView() {
             )}
           </tbody>
         </table>
+
+        {/* ── Table Pagination ── */}
+        {totalPages > 1 && (
+          <div className="table-pagination">
+            <span className="pagination-info">
+              Page <strong>{page}</strong> of <strong>{totalPages}</strong>
+            </span>
+            <div className="pagination-actions">
+              <button
+                type="button"
+                className="pagination-btn"
+                onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                disabled={page === 1}
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                className="pagination-btn"
+                onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={page === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Add Modal ── */}

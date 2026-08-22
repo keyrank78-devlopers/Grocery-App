@@ -97,10 +97,39 @@ const deleteFromCloudinary = async (publicId, resourceType = "image") => {
   }
 };
 
+// Storage for avatar images
+const avatarStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "avatars",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+    transformation: [{ width: 300, height: 300, crop: "thumb", gravity: "face", quality: "auto" }],
+  },
+});
+
+const uploadAvatarImage = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max
+  fileFilter: (_req, file, cb) => {
+    const allowedMimetypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/x-png"];
+    const allowedExtensions = /\.(jpg|jpeg|png|webp)$/i;
+
+    const validMime = allowedMimetypes.includes(file.mimetype);
+    const validExt = allowedExtensions.test(file.originalname);
+
+    if (validMime || validExt) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only jpg, jpeg, png, webp images are allowed"), false);
+    }
+  },
+}).single("image");
+
 module.exports = {
   cloudinary,
   uploadCategoryImage,
   uploadBannerImage,
+  uploadAvatarImage,
   uploadToCloudinary,
   deleteFromCloudinary,
 };

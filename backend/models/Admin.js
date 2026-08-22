@@ -30,6 +30,14 @@ const adminSchema = new mongoose.Schema(
       type: String,
       required: [true, "Password is required"],
     },
+    avatarUrl: {
+      type: String,
+      default: "",
+    },
+    avatarPublicId: {
+      type: String,
+      default: "",
+    },
     refreshToken: {
       type: String,
       default: null,

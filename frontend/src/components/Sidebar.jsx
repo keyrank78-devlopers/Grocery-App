@@ -33,13 +33,14 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
       {/* Brand */}
       <div className="sidebar-brand">
         <div className="sidebar-brand-inner">
-          <div className="sidebar-logo-wrap">
+          <div className="sidebar-logo-wrap" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <img
               src={logo}
               alt="Keyrank"
               className="sidebar-logo"
               onError={(e) => { e.target.style.display = "none"; }}
             />
+            <span className="sidebar-app-name">Keyrank</span>
           </div>
           <button className="mobile-close-btn" onClick={onClose} aria-label="Close menu">
             &times;
@@ -74,7 +75,12 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
       {/* Footer */}
       <div className="sidebar-footer">
         <div className="user-profile">
-          <div className="user-avatar">{avatarLetter}</div>
+          <div 
+            className="user-avatar"
+            style={user?.avatarUrl ? { background: `url(${user.avatarUrl}) center/cover no-repeat`, boxShadow: "none" } : {}}
+          >
+            {!user?.avatarUrl && avatarLetter}
+          </div>
           <div className="user-info">
             <span className="user-name">{user?.name || "Admin User"}</span>
             <span className="user-role">{formatRole(role)}</span>

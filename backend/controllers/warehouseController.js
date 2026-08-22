@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Warehouse = require("../models/Warehouse");
 const generateCustomId = require("../utils/generateCustomId");
 
@@ -91,7 +92,10 @@ const getWarehouses = async (req, res) => {
 const getWarehouseById = async (req, res) => {
   try {
     const { id } = req.params;
-    const warehouse = await Warehouse.findById(id).lean();
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { $or: [{ _id: id }, { warehouse_id: id }] }
+      : { warehouse_id: id };
+    const warehouse = await Warehouse.findOne(query).lean();
 
     if (!warehouse) {
       return res.status(404).json({
@@ -132,7 +136,10 @@ const updateWarehouse = async (req, res) => {
       isActive,
     } = req.body;
 
-    const warehouse = await Warehouse.findById(id);
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { $or: [{ _id: id }, { warehouse_id: id }] }
+      : { warehouse_id: id };
+    const warehouse = await Warehouse.findOne(query);
 
     if (!warehouse) {
       return res.status(404).json({
@@ -185,7 +192,10 @@ const updateWarehouse = async (req, res) => {
 const deleteWarehouse = async (req, res) => {
   try {
     const { id } = req.params;
-    const warehouse = await Warehouse.findByIdAndDelete(id);
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { $or: [{ _id: id }, { warehouse_id: id }] }
+      : { warehouse_id: id };
+    const warehouse = await Warehouse.findOneAndDelete(query);
 
     if (!warehouse) {
       return res.status(404).json({
@@ -214,7 +224,10 @@ const deleteWarehouse = async (req, res) => {
 const toggleWarehouseStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const warehouse = await Warehouse.findById(id);
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { $or: [{ _id: id }, { warehouse_id: id }] }
+      : { warehouse_id: id };
+    const warehouse = await Warehouse.findOne(query);
 
     if (!warehouse) {
       return res.status(404).json({

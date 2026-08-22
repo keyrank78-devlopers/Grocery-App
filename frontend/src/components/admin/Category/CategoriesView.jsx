@@ -12,6 +12,13 @@ export default function CategoriesView() {
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // ── Filters State ──────────────────────────────────────────────
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   // ── Add Modal ──────────────────────────────────────────────────
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -28,12 +35,25 @@ export default function CategoriesView() {
   // ── Delete Confirm Modal ───────────────────────────────────────
   const [deleteCat, setDeleteCat] = useState(null);
 
+  // Debounce search string (500ms delay)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
   // ── Fetch ──────────────────────────────────────────────────────
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${BASE_URL}/admin/get-categories`, { withCredentials: true });
+      const res = await axios.get(`${BASE_URL}/admin/get-categories`, {
+        params: { page, limit: 10, search: debouncedSearch, status: statusFilter },
+        withCredentials: true 
+      });
       setCategories(res.data.data || []);
+      setTotalPages(res.data.pagination?.totalPages || 1);
     } catch (err) {
       console.error(err);
       showToast("Failed to load categories", "error");
@@ -42,7 +62,9 @@ export default function CategoriesView() {
     }
   };
 
-  useEffect(() => { fetchCategories(); }, []);
+  useEffect(() => {
+    fetchCategories();
+  }, [page, debouncedSearch, statusFilter]);
 
   // ── Add Category ───────────────────────────────────────────────
   const handleAddCategory = async (e) => {
@@ -59,7 +81,7 @@ export default function CategoriesView() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      setCategories((prev) => [res.data.data, ...prev]);
+      fetchCategories();
       setNewCatName("");
       setAddImage(null);
       setIsAddOpen(false);
@@ -121,7 +143,7 @@ export default function CategoriesView() {
         `${BASE_URL}/admin/delete-categories/${deleteCat.category_id}`,
         { withCredentials: true }
       );
-      setCategories((prev) => prev.filter((c) => c.category_id !== deleteCat.category_id));
+      fetchCategories();
       setDeleteCat(null);
       showToast("Category deleted successfully!", "success");
     } catch (err) {
@@ -172,14 +194,60 @@ export default function CategoriesView() {
 
   return (
     <div className="content-section active">
+      {/* Page Header */}
       <div className="page-header">
         <div className="page-header-content">
           <h2>Category Management</h2>
-
         </div>
         <button className="btn btn-primary" onClick={() => setIsAddOpen(true)}>
           + Add Category
         </button>
+      </div>
+
+      {/* ── Filter Toolbar ── */}
+      <div style={{ display: "flex", gap: "16px", marginBottom: "20px", flexWrap: "wrap", alignItems: "center" }}>
+        {/* Search */}
+        <div style={{ flex: "1", minWidth: "200px", position: "relative" }}>
+          <input
+            type="text"
+            placeholder="Search categories..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: "100%", padding: "10px 14px 10px 36px" }}
+          />
+          <svg width="16" height="16" fill="none" stroke="var(--text-muted)" viewBox="0 0 24 24" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }}>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+
+        {/* Status Filter */}
+        <div style={{ minWidth: "140px" }}>
+          <select
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+            style={{ width: "100%", cursor: "pointer", height: "42px", padding: "10px 14px" }}
+          >
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+
+        {/* Clear Filters */}
+        {(searchTerm || statusFilter) && (
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() => {
+              setSearchTerm("");
+              setStatusFilter("");
+              setPage(1);
+            }}
+            style={{ height: "42px", padding: "0 18px", borderRadius: "8px", border: "1px solid var(--border-color)", fontSize: "13px", fontWeight: "600", cursor: "pointer", backgroundColor: "var(--bg-secondary)" }}
+          >
+            Clear Filters
+          </button>
+        )}
       </div>
 
       {/* ── Table ── */}
@@ -247,6 +315,33 @@ export default function CategoriesView() {
             )}
           </tbody>
         </table>
+
+        {/* ── Table Pagination ── */}
+        {totalPages > 1 && (
+          <div className="table-pagination">
+            <span className="pagination-info">
+              Page <strong>{page}</strong> of <strong>{totalPages}</strong>
+            </span>
+            <div className="pagination-actions">
+              <button
+                type="button"
+                className="pagination-btn"
+                onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                disabled={page === 1}
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                className="pagination-btn"
+                onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={page === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Add Modal ── */}

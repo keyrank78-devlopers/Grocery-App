@@ -1,7 +1,8 @@
 const express = require("express");
-const { adminRegister, login, refreshAccessToken, logout, getMe } = require("../controllers/adminController");
+const { adminRegister, login, refreshAccessToken, logout, getMe, updateMe, uploadAvatar } = require("../controllers/adminController");
 const { sendOTP, verifyOTP, getCustomerProfile, updateCustomerProfile } = require("../controllers/customerController");
 const { verifyAdminToken, verifyStaffToken, verifyCustomerToken } = require("../middleware/auth");
+const { uploadAvatarImage } = require("../config/cloudinary");
 
 const router = express.Router();
 
@@ -105,6 +106,49 @@ router.post("/logout", logout);
  */
 // GET /api/auth/me (Check active user session profile)
 router.get("/me", verifyStaffToken, getMe);
+
+/**
+ * @swagger
+ * /auth/profile:
+ *   put:
+ *     summary: Update admin profile
+ *     tags: [Staff Management & Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               mobile:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ */
+// PUT /api/auth/profile (Update admin profile)
+router.put("/profile", verifyAdminToken, updateMe);
+
+/**
+ * @swagger
+ * /auth/profile/avatar:
+ *   post:
+ *     summary: Upload admin profile avatar image
+ *     tags: [Staff Management & Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Avatar image uploaded successfully
+ */
+// POST /api/auth/profile/avatar (Upload admin profile picture)
+router.post("/profile/avatar", verifyAdminToken, uploadAvatarImage, uploadAvatar);
 
 /**
  * @swagger

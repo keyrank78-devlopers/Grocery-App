@@ -457,24 +457,24 @@ export default function ProductsView() {
 
       {/* ── Server-side Pagination Navigation ── */}
       {totalPages > 1 && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "20px", padding: "12px 24px", background: "#fff", borderRadius: "12px", border: "1px solid #eef2f6", boxShadow: "0 2px 12px rgba(0,0,0,0.01)" }}>
-          <span style={{ fontSize: "14px", color: "#64748b" }}>
+        <div className="table-pagination">
+          <span className="pagination-info">
             Page <strong>{page}</strong> of <strong>{totalPages}</strong>
           </span>
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div className="pagination-actions">
             <button
-              className="btn btn-outline"
+              type="button"
+              className="pagination-btn"
               onClick={() => setPage(prev => Math.max(1, prev - 1))}
               disabled={page === 1}
-              style={{ padding: "7px 14px", fontSize: "13px", cursor: page === 1 ? "not-allowed" : "pointer" }}
             >
               Previous
             </button>
             <button
-              className="btn btn-outline"
+              type="button"
+              className="pagination-btn"
               onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
               disabled={page === totalPages}
-              style={{ padding: "7px 14px", fontSize: "13px", cursor: page === totalPages ? "not-allowed" : "pointer" }}
             >
               Next
             </button>

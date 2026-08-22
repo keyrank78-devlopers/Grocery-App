@@ -330,7 +330,7 @@ const getMe = async (req, res) => {
     const user = req.user; // Populated by verifyStaffToken middleware
     const role = user.role || "admin";
     const isStaff = role !== "admin";
-    
+
     return res.status(200).json({
       success: true,
       data: {
@@ -340,6 +340,7 @@ const getMe = async (req, res) => {
           email: user.email,
           mobile: role === "admin" ? user.mobile : user.phone,
           role: role,
+          avatarUrl: role === "admin" ? user.avatarUrl : undefined,
           assignedWarehouse: isStaff && user.assignedWarehouse ? user.assignedWarehouse : undefined,
         },
       },
@@ -353,10 +354,101 @@ const getMe = async (req, res) => {
   }
 };
 
+const updateMe = async (req, res) => {
+  try {
+    const admin = req.admin; // Populated by verifyAdminToken middleware
+    const { name, email, mobile } = req.body;
+
+    if (name) admin.fullName = name.trim();
+    if (mobile) admin.mobile = mobile.trim();
+
+    if (email) {
+      const normalizedEmail = email.trim().toLowerCase();
+      if (normalizedEmail !== admin.email) {
+        const existing = await Admin.findOne({ email: normalizedEmail }).lean();
+        if (existing) {
+          return res.status(409).json({
+            success: false,
+            message: "Email already in use",
+          });
+        }
+        admin.email = normalizedEmail;
+      }
+    }
+
+    await admin.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      data: {
+        user: {
+          id: admin.admin_id,
+          name: admin.fullName,
+          email: admin.email,
+          mobile: admin.mobile,
+          role: "admin",
+          avatarUrl: admin.avatarUrl || "",
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Update Admin Profile Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+const uploadAvatar = async (req, res) => {
+  try {
+    const admin = req.admin; // Populated by verifyAdminToken middleware
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No image file provided" });
+    }
+
+    // Delete old avatar from Cloudinary if it exists
+    if (admin.avatarPublicId) {
+      const { deleteFromCloudinary } = require("../config/cloudinary");
+      await deleteFromCloudinary(admin.avatarPublicId).catch(() => { });
+    }
+
+    admin.avatarUrl = req.file.path;
+    admin.avatarPublicId = req.file.filename;
+    await admin.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile image uploaded successfully",
+      data: {
+        user: {
+          id: admin.admin_id,
+          name: admin.fullName,
+          email: admin.email,
+          mobile: admin.mobile,
+          role: "admin",
+          avatarUrl: admin.avatarUrl,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Upload Avatar Error:", error);
+    // Clean up Cloudinary file if upload fails
+    if (req.file?.filename) {
+      const { deleteFromCloudinary } = require("../config/cloudinary");
+      await deleteFromCloudinary(req.file.filename).catch(() => { });
+    }
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 module.exports = {
   adminRegister,
   login,
   refreshAccessToken,
   logout,
   getMe,
+  updateMe,
+  uploadAvatar,
 };

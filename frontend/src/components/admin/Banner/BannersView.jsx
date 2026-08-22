@@ -12,6 +12,8 @@ export default function BannersView() {
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   // ── Add Modal ──────────────────────────────────────────────────
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -30,8 +32,12 @@ export default function BannersView() {
   const fetchBanners = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${BASE_URL}/admin/banners`, { withCredentials: true });
+      const res = await axios.get(`${BASE_URL}/admin/banners`, {
+        params: { page, limit: 10 },
+        withCredentials: true 
+      });
       setBanners(res.data.data || []);
+      setTotalPages(res.data.pagination?.totalPages || 1);
     } catch (err) {
       console.error(err);
       showToast("Failed to load banners", "error");
@@ -42,7 +48,7 @@ export default function BannersView() {
 
   useEffect(() => {
     fetchBanners();
-  }, []);
+  }, [page]);
 
   // ── Add Banner ─────────────────────────────────────────────────
   const handleAddBanner = async (e) => {
@@ -61,7 +67,7 @@ export default function BannersView() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      setBanners((prev) => [res.data.data, ...prev]);
+      fetchBanners();
       setAddImage(null);
       setIsAddOpen(false);
       showToast("Banner added successfully!", "success");
@@ -123,7 +129,7 @@ export default function BannersView() {
         `${BASE_URL}/admin/delete-banners/${deleteBanner.banner_id}`,
         { withCredentials: true }
       );
-      setBanners((prev) => prev.filter((b) => b.banner_id !== deleteBanner.banner_id));
+      fetchBanners();
       setDeleteBanner(null);
       showToast("Banner deleted successfully!", "success");
     } catch (err) {
@@ -247,6 +253,33 @@ export default function BannersView() {
             )}
           </tbody>
         </table>
+
+        {/* ── Table Pagination ── */}
+        {totalPages > 1 && (
+          <div className="table-pagination">
+            <span className="pagination-info">
+              Page <strong>{page}</strong> of <strong>{totalPages}</strong>
+            </span>
+            <div className="pagination-actions">
+              <button
+                type="button"
+                className="pagination-btn"
+                onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                disabled={page === 1}
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                className="pagination-btn"
+                onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={page === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Add Modal ── */}

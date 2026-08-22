@@ -74,6 +74,7 @@ export default function App() {
       <div className="main-layout">
         <Header
           title={activeTab}
+          setActiveTab={setActiveTab}
           onLogout={logout}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
