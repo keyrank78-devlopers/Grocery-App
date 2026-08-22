@@ -88,9 +88,9 @@ const swaggerOptions = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "API Documentation",
+      title: "Admin & Staff API Documentation",
       version: "1.0.0",
-      description: "API documentation for the backend application",
+      description: "API documentation for the Admin and Staff application features",
     },
     servers: [
       {
@@ -123,7 +123,46 @@ const swaggerOptions = {
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Generate Customer Specific Swagger Spec
+const customerSwaggerSpec = JSON.parse(JSON.stringify(swaggerSpec));
+customerSwaggerSpec.info = {
+  title: "Customer API Documentation",
+  version: "1.0.0",
+  description: "API documentation for Customer mobile / web application features",
+};
+customerSwaggerSpec.tags = [
+  { name: "Customer Authentication", description: "APIs for Customer OTP login and profile" },
+  { name: "Common Authentication", description: "APIs shared between roles, like refresh token" },
+  { name: "Admin - Category", description: "APIs for viewing categories" },
+  { name: "Admin - Sub-Category", description: "APIs for viewing subcategories" },
+  { name: "Admin - Product", description: "APIs for viewing products" }
+];
+
+// Limit to only the paths requested by the user for Customer docs
+const customerPaths = [
+  "/auth/customer/send-otp",
+  "/auth/customer/verify-otp",
+  "/auth/customer/me",
+  "/auth/customer/profile",
+  "/auth/refresh-token",
+  "/admin/get-categories",
+  "/admin/get-sub-categories",
+  "/admin/get-products",
+  "/admin/single-products/{id}"
+];
+
+customerSwaggerSpec.paths = {};
+for (const path of customerPaths) {
+  if (swaggerSpec.paths[path]) {
+    customerSwaggerSpec.paths[path] = swaggerSpec.paths[path];
+  }
+}
+
+// Serve separate documentation endpoints
+app.use("/api-docs/admin", swaggerUi.serveFiles(swaggerSpec), swaggerUi.setup(swaggerSpec));
+app.use("/api-docs/customer", swaggerUi.serveFiles(customerSwaggerSpec), swaggerUi.setup(customerSwaggerSpec));
+app.use("/api-docs", swaggerUi.serveFiles(swaggerSpec), swaggerUi.setup(swaggerSpec));
 
 // ─── Health check ───────────────────────────────────────────────────────────
 app.get("/api/health", (req, res) => {

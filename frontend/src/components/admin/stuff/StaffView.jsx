@@ -4,6 +4,20 @@ import CreateStuff from "./CreateStuff";
 import { useToast } from "../../../context/ToastContext";
 import "./stuff.css";
 
+const EditIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block" }}>
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z" />
+  </svg>
+);
+
+const PowerIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block" }}>
+    <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+    <line x1="12" y1="2" x2="12" y2="12" />
+  </svg>
+);
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const ROLE_OPTIONS = [
@@ -408,21 +422,23 @@ export default function StaffView() {
                         </span>
                       </td>
                       <td className="text-right">
-                        <div className="staff-actions">
+                        <div className="staff-actions" style={{ display: "inline-flex", gap: "6px" }}>
                           <button
                             className="btn btn-outline btn-xs"
+                            style={{ padding: "6px", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#4f46e5" }}
                             onClick={() => setEditingMember(member)}
+                            title="Edit Member"
                           >
-                            Edit
+                            <EditIcon />
                           </button>
                           <button
                             className={`btn btn-outline btn-xs ${member.status === "Active" ? "text-danger" : "text-success"}`}
+                            style={{ padding: "6px", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                             onClick={() => handleToggleStatus(member)}
                             disabled={togglingId === member.id}
+                            title={member.status === "Active" ? "Deactivate Member" : "Activate Member"}
                           >
-                            {togglingId === member.id
-                              ? "..."
-                              : member.status === "Active" ? "Deactivate" : "Activate"}
+                            {togglingId === member.id ? "..." : <PowerIcon />}
                           </button>
                         </div>
                       </td>

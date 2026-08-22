@@ -63,11 +63,11 @@
 
 .staff-search-input {
   width: 100%;
-  padding: 10px 36px 10px 40px;
+  padding: 12px 36px 12px 42px !important;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 14px;
   outline: none;
   background-color: var(--bg-secondary);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);

@@ -41,8 +41,7 @@ export function AuthProvider({ children }) {
         // Ignore refresh-token and logout endpoints to avoid infinite loop
         const isAuthEndpoint =
           originalRequest.url?.includes("/auth/refresh-token") ||
-          originalRequest.url?.includes("/auth/logout") ||
-          originalRequest.url?.includes("/auth/me");
+          originalRequest.url?.includes("/auth/logout");
 
         if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
           
