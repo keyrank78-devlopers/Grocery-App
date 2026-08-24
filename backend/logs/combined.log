@@ -14,3 +14,29 @@
 [2026-08-24 18:50:24] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [36m304[0m 0.670 ms - -[0m
 [2026-08-24 18:50:24] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [36m304[0m 0.512 ms - -[0m
 [2026-08-24 18:50:45] WARN: SIGINT received. Shutting down gracefully...
+[2026-08-24 18:52:47] INFO: Server running on port 5000 in development mode
+[2026-08-24 18:53:00] HTTP: [0mGET /api-docs/ [36m304[0m 6.802 ms - -[0m
+[2026-08-24 18:53:00] HTTP: [0mGET /api-docs/swagger-ui.css [36m304[0m 2.566 ms - -[0m
+[2026-08-24 18:53:00] HTTP: [0mGET /api-docs/swagger-ui-init.js [36m304[0m 0.759 ms - -[0m
+[2026-08-24 18:53:00] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [36m304[0m 4.693 ms - -[0m
+[2026-08-24 18:53:00] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [36m304[0m 5.439 ms - -[0m
+[2026-08-24 18:53:00] HTTP: [0mGET /api-docs/swagger-ui-init.js [36m304[0m 0.561 ms - -[0m
+[2026-08-24 18:53:00] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [36m304[0m 1.028 ms - -[0m
+[2026-08-24 18:53:00] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [36m304[0m 1.171 ms - -[0m
+[2026-08-24 18:53:18] ERROR: Unhandled Error: Cannot set property query of #<IncomingMessage> which has only a getter | {"method":"GET","url":"/api/v1/categories?page=1&limit=10&status=active","ip":"::1"}
+TypeError: Cannot set property query of #<IncomingMessage> which has only a getter
+    at F:\App\backend\node_modules\express-mongo-sanitize\index.js:113:18
+    at Array.forEach (<anonymous>)
+    at F:\App\backend\node_modules\express-mongo-sanitize\index.js:110:44
+    at Layer.handleRequest (F:\App\backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (F:\App\backend\node_modules\router\index.js:342:13)
+    at F:\App\backend\node_modules\router\index.js:297:9
+    at processParams (F:\App\backend\node_modules\router\index.js:582:12)
+    at next (F:\App\backend\node_modules\router\index.js:291:5)
+    at read (F:\App\backend\node_modules\body-parser\lib\read.js:53:5)
+    at urlencodedParser (F:\App\backend\node_modules\body-parser\lib\types\urlencoded.js:51:5)
+[2026-08-24 18:53:18] HTTP: [0mGET /api/v1/categories?page=1&limit=10&status=active [31m500[0m 3.274 ms - 65[0m
+[2026-08-24 18:54:06] INFO: Server running on port 5000 in development mode
+[2026-08-24 18:54:40] INFO: Server running on port 5000 in development mode
+[2026-08-24 18:54:51] HTTP: [0mGET /api/v1/categories?page=1&limit=10&status=active [32m200[0m 59.455 ms - 471[0m
+[2026-08-24 18:54:54] WARN: SIGINT received. Shutting down gracefully...

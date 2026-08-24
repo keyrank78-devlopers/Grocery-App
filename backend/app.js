@@ -5,7 +5,6 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const compression = require("compression");
 const rateLimit = require("express-rate-limit");
-const mongoSanitize = require("express-mongo-sanitize");
 const morgan = require("morgan");
 const logger = require("./utils/logger");
 const { connectDB } = require("./config/db");
@@ -100,8 +99,7 @@ app.use(compression());
 app.use(express.json({ limit: "15kb" })); // Max 15kb payload
 app.use(express.urlencoded({ extended: true, limit: "15kb" }));
 
-// 7. NoSQL Injection Sanitization — sirf API routes pe apply karo, Swagger UI pe nahi
-app.use("/api", mongoSanitize());
+
 
 // ─── API Routes ─────────────────────────────────────────────────────────────
 app.use("/api/v1/auth", authRoutes);
