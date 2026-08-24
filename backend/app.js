@@ -5,6 +5,9 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const compression = require("compression");
 const rateLimit = require("express-rate-limit");
+const mongoSanitize = require("express-mongo-sanitize");
+const morgan = require("morgan");
+const logger = require("./utils/logger");
 const { connectDB } = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
@@ -31,6 +34,18 @@ const app = express();
 
 // Connect MongoDB Database
 connectDB();
+
+// ─── HTTP Request Logger (Morgan → Winston) ─────────────────────────────────
+const morganFormat = process.env.NODE_ENV === "production" ? "combined" : "dev";
+app.use(
+  morgan(morganFormat, {
+    stream: {
+      write: (message) => logger.http(message.trim()),
+    },
+    // Skip logging health check endpoint to reduce noise
+    skip: (req) => req.originalUrl === "/api/health",
+  })
+);
 
 // ─── Security Middlewares ───────────────────────────────────────────────────
 // 1. Helmet: Secure HTTP headers
@@ -84,6 +99,9 @@ app.use(compression());
 // 6. Request Parsers (With body size limitation to prevent JSON flooding attacks)
 app.use(express.json({ limit: "15kb" })); // Max 15kb payload
 app.use(express.urlencoded({ extended: true, limit: "15kb" }));
+
+// 7. NoSQL Injection Sanitization — strips $ and . from req.body, req.params, req.query
+app.use(mongoSanitize());
 
 // ─── API Routes ─────────────────────────────────────────────────────────────
 app.use("/api/v1/auth", authRoutes);
@@ -204,7 +222,13 @@ app.use((err, req, res, next) => {
     });
   }
 
-  console.error("Global Error Handler:", err.stack);
+  logger.error(`Unhandled Error: ${err.message}`, {
+    stack: err.stack,
+    method: req.method,
+    url: req.originalUrl,
+    ip: req.ip,
+  });
+
   res.status(500).json({
     success: false,
     message: "Something went wrong on the server.",

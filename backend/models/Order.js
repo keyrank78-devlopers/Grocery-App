@@ -140,7 +140,11 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Indexes: Optimize query performance
+// ── Indexes: Optimize query performance ────────────────────────
 orderSchema.index({ customer: 1 });
+orderSchema.index({ orderStatus: 1 });
+orderSchema.index({ createdAt: -1 });
+orderSchema.index({ "paymentInfo.razorpayOrderId": 1 }, { sparse: true }); // verifyPayment + webhook
+orderSchema.index({ orderStatus: 1, "paymentInfo.method": 1, createdAt: 1 }); // cleanup scheduler query
 
 module.exports = mongoose.model("Order", orderSchema);

@@ -125,4 +125,11 @@ productSchema.pre("save", function () {
   }
 });
 
+// ── Indexes for query performance ──────────────────────────────
+productSchema.index({ category: 1 });
+productSchema.index({ subCategory: 1 });
+productSchema.index({ isActive: 1 });
+productSchema.index({ category: 1, subCategory: 1, isActive: 1 }); // compound — most common query
+productSchema.index({ name: "text", description: "text" });         // full-text search
+
 module.exports = mongoose.model("Product", productSchema);

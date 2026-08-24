@@ -78,6 +78,24 @@ const checkout = async (req, res) => {
       await previousPendingOrder.save();
     }
 
+    // 2.5 Idempotency check for Wallet payment — prevent duplicate orders on double-click
+    if (paymentMethod === "Wallet") {
+      const recentWalletOrder = await Order.findOne({
+        customer: customerId,
+        "paymentInfo.method": "Wallet",
+        orderStatus: "Placed",
+        createdAt: { $gte: new Date(Date.now() - 15000) }, // last 15 seconds
+      });
+
+      if (recentWalletOrder) {
+        return res.status(200).json({
+          success: true,
+          message: "Order already placed successfully",
+          data: recentWalletOrder,
+        });
+      }
+    }
+
     // 3. Verify Delivery Address
     const address = await Address.findOne({ _id: addressId, customer: customerId }).lean();
     if (!address) {
@@ -194,13 +212,26 @@ const checkout = async (req, res) => {
     if (paymentMethod === "COD" || paymentMethod === "Wallet") {
       // For COD & Wallet, order is placed immediately
       if (paymentMethod === "Wallet") {
-        const customer = await Customer.findOne({ customer_id: customerId });
-        customer.walletBalance -= pricingResult.pricing.totalPrice;
-        await customer.save();
-
+        // Atomic deduction — balance check + deduct in one query (race condition safe)
         const WalletTransaction = require("../models/WalletTransaction");
+        const updatedCustomer = await Customer.findOneAndUpdate(
+          {
+            _id: customerId,
+            walletBalance: { $gte: pricingResult.pricing.totalPrice }, // balance check
+          },
+          { $inc: { walletBalance: -pricingResult.pricing.totalPrice } },
+          { new: true }
+        );
+
+        if (!updatedCustomer) {
+          return res.status(400).json({
+            success: false,
+            message: "Insufficient wallet balance. Please top up your wallet.",
+          });
+        }
+
         await WalletTransaction.create({
-          customer: customer._id,
+          customer: updatedCustomer._id,
           amount: pricingResult.pricing.totalPrice,
           type: "Debit",
           description: `Payment for Order ${order_id}`,

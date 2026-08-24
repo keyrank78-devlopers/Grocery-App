@@ -24,13 +24,23 @@ const calculatePricing = async (cart, couponCode) => {
     };
   }
 
-  // 1. Calculate items subtotal and load product data
+  // 1. Batch load all products in one DB query (fixes N+1 problem)
+  const productIds = cart.items.map((item) => item.product._id || item.product);
+  const productDocs = await Product.find({ _id: { $in: productIds }, isActive: true }).lean();
+
+  // Map by string ID for O(1) lookup
+  const productMap = {};
+  for (const p of productDocs) {
+    productMap[p._id.toString()] = p;
+  }
+
   let itemsPrice = 0;
   const calculatedItems = [];
 
   for (const item of cart.items) {
-    // Find product to ensure latest price and GST rate are used
-    const product = await Product.findOne({ _id: item.product._id || item.product, isActive: true }).lean();
+    const productId = (item.product._id || item.product).toString();
+    const product = productMap[productId];
+
     if (!product) {
       return {
         success: false,

@@ -496,8 +496,8 @@ const updateProduct = async (req, res) => {
     if (category) product.category = resolvedCategoryId;
     if (subCategory) product.subCategory = resolvedSubCategoryId;
     if (description !== undefined) product.description = description.trim();
-    if (mrp !== undefined) product.mrp = numericMrp;
-    if (sellPrice !== undefined) product.sellPrice = numericSellPrice;
+    if (mrp !== undefined) product.mrp = Number(mrp);
+    if (sellPrice !== undefined) product.sellPrice = Number(sellPrice);
     if (stockQuantity !== undefined) product.stockQuantity = Number(stockQuantity);
     if (gstRate !== undefined) {
       const numericGstRate = Number(gstRate);

@@ -61,11 +61,8 @@ const optionalCustomerAuth = async (req, res, next) => {
     }
     next();
   } catch (error) {
-    console.error("Optional Customer Auth Error:", error.message);
-    return res.status(401).json({
-      success: false,
-      message: "Invalid or expired session token.",
-    });
+    // Optional auth — silently ignore any token errors and continue as guest
+    next();
   }
 };
 
@@ -120,6 +117,24 @@ const verifyCustomerToken = async (req, res, next) => {
       return res.status(403).json({
         success: false,
         message: "Forbidden. Customer access required.",
+      });
+    }
+
+    // ── DB lookup: verify customer still exists and is active ──
+    const Customer = require("../models/Customer");
+    const customer = await Customer.findById(decoded.id).select("_id isActive").lean();
+
+    if (!customer) {
+      return res.status(401).json({
+        success: false,
+        message: "Account not found. Please login again.",
+      });
+    }
+
+    if (!customer.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been blocked. Please contact support.",
       });
     }
 

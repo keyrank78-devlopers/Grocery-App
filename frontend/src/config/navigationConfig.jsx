@@ -13,6 +13,7 @@ const CouponsView       = lazy(() => import("../components/admin/Coupon/CouponsV
 const ProfileView       = lazy(() => import("../components/admin/Profile/ProfileView"));
 const CustomersView     = lazy(() => import("../components/admin/Customer/CustomersView"));
 const FaqView           = lazy(() => import("../components/admin/Faq/FaqView"));
+const TicketsView       = lazy(() => import("../components/admin/Ticket/TicketsView"));
 const PoliciesView      = lazy(() => import("../components/admin/Policy/PoliciesView"));
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -80,6 +81,11 @@ const Icons = {
   faq: (
     <svg className="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  tickets: (
+    <svg className="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
     </svg>
   ),
   policies: (
@@ -191,6 +197,15 @@ export const NAV_CONFIG = [
     icon: Icons.faq,
     component: FaqView,
     roles: ["admin", "sub_admin"],
+    defaultFor: [],
+  },
+  {
+    id: "tickets",
+    label: "Support Tickets",
+    section: "Support",
+    icon: Icons.tickets,
+    component: TicketsView,
+    roles: ["admin", "sub_admin", "agent"],
     defaultFor: [],
   },
   {
