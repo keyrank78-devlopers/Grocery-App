@@ -251,12 +251,17 @@ const removeFromCart = async (req, res) => {
 };
 
 // ───────────────────────────────────────────────────────────────
-// Get Cart
-// GET /api/v1/cart
+// Get Cart (Supports page, limit, search & category filters + pricing summary)
+// GET /api/v1/cart/view-cart
 // ───────────────────────────────────────────────────────────────
 const getCart = async (req, res) => {
   try {
     const session = req.cartSession;
+    const { page = 1, limit = 10, search = "", category } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
 
     let cart;
     if (session.customerId) {
@@ -266,20 +271,108 @@ const getCart = async (req, res) => {
     }
 
     if (!cart) {
-      // Instead of 404, return an empty cart to simplify frontend state initialization
       return res.status(200).json({
         success: true,
         data: {
           items: [],
+          pricingSummary: {
+            subtotal: 0,
+            totalMrp: 0,
+            totalSavings: 0,
+            totalGst: 0,
+            itemCount: 0,
+            totalQuantity: 0,
+          },
+          pagination: {
+            total: 0,
+            page: pageNum,
+            limit: limitNum,
+            totalPages: 0,
+          },
         },
       });
     }
 
-    const populatedCart = await getPopulatedCart(cart._id);
+    let populatedCart = await getPopulatedCart(cart._id);
+
+    // Filter out deleted product references
+    let items = (populatedCart.items || []).filter((item) => item.product != null);
+
+    // Apply optional search filter by Product Name or SKU
+    if (search.trim()) {
+      const searchRegex = new RegExp(search.trim(), "i");
+      items = items.filter(
+        (item) =>
+          searchRegex.test(item.product.name) ||
+          searchRegex.test(item.product.sku)
+      );
+    }
+
+    // Apply optional category filter
+    if (category) {
+      items = items.filter(
+        (item) =>
+          item.product.category &&
+          (item.product.category._id?.toString() === category ||
+            item.product.category.toString() === category)
+      );
+    }
+
+    // Calculate Pricing Summary Breakdown (for full filtered cart)
+    let subtotal = 0;
+    let totalMrp = 0;
+    let totalSavings = 0;
+    let totalGst = 0;
+    let totalQuantity = 0;
+
+    const formattedItems = items.map((item) => {
+      const p = item.product;
+      const itemMrpTotal = (p.mrp || 0) * item.quantity;
+      const itemSellTotal = (p.sellPrice || 0) * item.quantity;
+      const itemSavings = Math.max(0, itemMrpTotal - itemSellTotal);
+      const gstRate = p.gstRate || 0;
+      const itemGst = Math.round(((itemSellTotal * gstRate) / 100) * 100) / 100;
+
+      subtotal += itemSellTotal;
+      totalMrp += itemMrpTotal;
+      totalSavings += itemSavings;
+      totalGst += itemGst;
+      totalQuantity += item.quantity;
+
+      return {
+        ...item,
+        itemMrpTotal,
+        itemSellTotal,
+        itemSavings,
+        itemGst,
+      };
+    });
+
+    const total = formattedItems.length;
+    const paginatedItems = formattedItems.slice(skip, skip + limitNum);
 
     return res.status(200).json({
       success: true,
-      data: populatedCart,
+      data: {
+        _id: populatedCart._id,
+        customer: populatedCart.customer,
+        guestId: populatedCart.guestId,
+        items: paginatedItems,
+        pricingSummary: {
+          subtotal: Math.round(subtotal * 100) / 100,
+          totalMrp: Math.round(totalMrp * 100) / 100,
+          totalSavings: Math.round(totalSavings * 100) / 100,
+          totalGst: Math.round(totalGst * 100) / 100,
+          itemCount: formattedItems.length,
+          totalQuantity,
+        },
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      },
     });
   } catch (error) {
     console.error("Get Cart Error:", error);
@@ -304,26 +397,37 @@ const mergeCart = async (req, res) => {
       });
     }
 
-    const { guestId } = req.body;
-    if (!guestId) {
-      return res.status(400).json({
-        success: false,
-        message: "guestId is required to merge carts",
-      });
-    }
+    const guestId =
+      (req.body?.guestId && typeof req.body.guestId === "string")
+        ? req.body.guestId.trim()
+        : req.cookies?.guestId || req.headers["x-guest-id"];
 
-    const guestCart = await Cart.findOne({ guestId: guestId.trim() });
     let customerCart = await Cart.findOne({ customer: customerId });
 
-    if (!guestCart || guestCart.items.length === 0) {
-      // Nothing to merge, return current customer cart
+    if (!guestId) {
       if (!customerCart) {
         customerCart = await Cart.create({ customer: customerId, items: [] });
       }
       const populatedCart = await getPopulatedCart(customerCart._id);
       return res.status(200).json({
         success: true,
-        message: "Cart merge completed (no guest items found)",
+        message: "No guest cart found to merge.",
+        data: populatedCart,
+      });
+    }
+
+    const guestCart = await Cart.findOne({ guestId });
+
+    if (!guestCart || !guestCart.items || guestCart.items.length === 0) {
+      // Nothing to merge, clear guestId cookie & return customer cart
+      res.clearCookie("guestId");
+      if (!customerCart) {
+        customerCart = await Cart.create({ customer: customerId, items: [] });
+      }
+      const populatedCart = await getPopulatedCart(customerCart._id);
+      return res.status(200).json({
+        success: true,
+        message: "Cart merge completed (no items in guest cart)",
         data: populatedCart,
       });
     }
@@ -350,6 +454,7 @@ const mergeCart = async (req, res) => {
 
     await customerCart.save();
     await Cart.deleteOne({ _id: guestCart._id }); // Delete guest cart after merge
+    res.clearCookie("guestId"); // Clear guest session cookie after merging
 
     const populatedCart = await getPopulatedCart(customerCart._id);
 

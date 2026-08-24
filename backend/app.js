@@ -8,11 +8,21 @@ const rateLimit = require("express-rate-limit");
 const { connectDB } = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const categoryRoutes = require("./routes/categoryRoutes");
+const subCategoryRoutes = require("./routes/subCategoryRoutes");
+const productRoutes = require("./routes/productRoutes");
+const bannerRoutes = require("./routes/bannerRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const addressRoutes = require("./routes/addressRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const couponRoutes = require("./routes/couponRoutes");
 const walletRoutes = require("./routes/walletRoutes");
+const wishlistRoutes = require("./routes/wishlistRoutes");
+const reviewRoutes = require("./routes/reviewRoutes");
+const policyRoutes = require("./routes/policyRoutes");
+const faqRoutes = require("./routes/faqRoutes");
+const locationRoutes = require("./routes/locationRoutes");
+
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 
@@ -31,13 +41,10 @@ app.use(cookieParser());
 // 3. CORS configuration
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://grocery-app-three-kappa.vercel.app",
-    ],
+    origin: true, // Dynamically allows origin
     credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie", "x-guest-id", "guestId"],
   })
 );
 
@@ -79,33 +86,57 @@ app.use(express.urlencoded({ extended: true, limit: "15kb" }));
 
 // ─── API Routes ─────────────────────────────────────────────────────────────
 app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/admin", adminRoutes);
+app.use("/api/v1/categories", categoryRoutes);
+app.use("/api/v1/sub-categories", subCategoryRoutes);
+app.use("/api/v1/products", productRoutes);
+app.use("/api/v1/banners", bannerRoutes);
 app.use("/api/v1/cart", cartRoutes);
 app.use("/api/v1/addresses", addressRoutes);
 app.use("/api/v1/orders", orderRoutes);
 app.use("/api/v1/coupons", couponRoutes);
 app.use("/api/v1/wallet", walletRoutes);
+app.use("/api/v1/wishlist", wishlistRoutes);
+app.use("/api/v1/reviews", reviewRoutes);
+app.use("/api/v1/policies", policyRoutes);
+app.use("/api/v1/faqs", faqRoutes);
+app.use("/api/v1/location", locationRoutes);
+app.use("/api/v1/admin", adminRoutes);
 
-// ─── Swagger Documentation ──────────────────────────────────────────────────
+// ─── Swagger Setup ──────────────────────────────────────────────────────────
 const swaggerOptions = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Admin & Staff API Documentation",
+      title: "Grocery App API Documentation",
       version: "1.0.0",
-      description: "API documentation for the Admin and Staff application features",
+      description: "Interactive API Documentation for Grocery App",
     },
     servers: [
       {
-        url: "https://grocery-app-x6gf.onrender.com/api/v1",
-        description: "Development server",
+        url: "/api/v1",
+        description: "Current Host Server",
+      },
+      {
+        url: "http://localhost:5000/api/v1",
+        description: "Localhost Server",
       },
     ],
     tags: [
-      { name: "Admin Authentication", description: "APIs for Admin registration and login" },
-      { name: "Staff Management & Authentication", description: "APIs for Staff registration (creation) and login" },
-      { name: "Customer Authentication", description: "APIs for Customer registration, login and profile update" },
-      { name: "Common Authentication", description: "APIs shared between roles, like refresh token and logout" }
+      { name: "Customer Authentication", description: "APIs for Customer OTP login & authentication" },
+      { name: "Customer Profile", description: "APIs for Customer profile management" },
+      { name: "Customer - Location & Serviceability", description: "10-Minute Quick Commerce delivery area & location serviceability endpoints" },
+      { name: "Customer - Banners", description: "Public promotional banner endpoints for Customer App / Storefront" },
+      { name: "Customer - Categories", description: "Public category endpoints for Customer App / Storefront" },
+      { name: "Customer - Sub-Categories", description: "Public sub-category endpoints for Customer App / Storefront" },
+      { name: "Customer - Products", description: "Public product listing, search, and details endpoints for Customer App" },
+      { name: "Customer - Wishlist", description: "Customer Wishlist management endpoints" },
+      { name: "Customer - Cart", description: "Shopping cart management endpoints (Works for both Guests and Logged-in Customers)" },
+      { name: "Customer - Address", description: "Customer delivery address management endpoints (Requires Login)" },
+      { name: "Customer - Coupons & Offers", description: "Customer discount coupons and promotional offers endpoints" },
+      { name: "Customer - Checkout & Orders", description: "Customer checkout, payment verification, order tracking, cancellation, and return endpoints" },
+      { name: "Customer - Wallet", description: "Customer In-App Wallet balance, top-up, and transaction history endpoints" },
+      { name: "Customer - FAQs & Support", description: "Frequently Asked Questions & Customer Support Helpdesk endpoints" },
+      { name: "Customer - Policies & Legal", description: "Public legal policies, terms, and privacy policy endpoints" },
     ],
     components: {
       securitySchemes: {
@@ -122,53 +153,11 @@ const swaggerOptions = {
       },
     ],
   },
-  apis: ["./routes/*.js"], // Path to the API docs
+  apis: ["./routes/*.js"],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
-
-// Generate Customer Specific Swagger Spec
-const customerSwaggerSpec = JSON.parse(JSON.stringify(swaggerSpec));
-customerSwaggerSpec.info = {
-  title: "Customer API Documentation",
-  version: "1.0.0",
-  description: "API documentation for Customer mobile / web application features",
-};
-customerSwaggerSpec.tags = [
-  { name: "Customer Authentication", description: "APIs for Customer OTP login and profile" },
-  { name: "Common Authentication", description: "APIs shared between roles, like refresh token" },
-  { name: "Admin - Category", description: "APIs for viewing categories" },
-  { name: "Admin - Sub-Category", description: "APIs for viewing subcategories" },
-  { name: "Admin - Product", description: "APIs for viewing products" },
-  { name: "Admin - Banner", description: "APIs for viewing banners" }
-];
-
-// Limit to only the paths requested by the user for Customer docs
-const customerPaths = [
-  "/auth/customer/send-otp",
-  "/auth/customer/verify-otp",
-  "/auth/customer/me",
-  "/auth/customer/profile",
-  "/auth/refresh-token",
-  "/admin/get-categories",
-  "/admin/get-sub-categories",
-  "/admin/get-products",
-  "/admin/single-products/{id}",
-  "/admin/get-banners",
-  "/admin/single-banners/{id}"
-];
-
-customerSwaggerSpec.paths = {};
-for (const path of customerPaths) {
-  if (swaggerSpec.paths[path]) {
-    customerSwaggerSpec.paths[path] = swaggerSpec.paths[path];
-  }
-}
-
-// Serve separate documentation endpoints
-app.use("/api-docs/admin", swaggerUi.serveFiles(swaggerSpec), swaggerUi.setup(swaggerSpec));
-app.use("/api-docs/customer", swaggerUi.serveFiles(customerSwaggerSpec), swaggerUi.setup(customerSwaggerSpec));
-app.use("/api-docs", swaggerUi.serveFiles(swaggerSpec), swaggerUi.setup(swaggerSpec));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // ─── Health check ───────────────────────────────────────────────────────────
 app.get("/api/health", (req, res) => {
@@ -182,7 +171,6 @@ app.use((req, res) => {
 
 // ─── Global Error Handler ───────────────────────────────────────────────────
 app.use((err, req, res, next) => {
-  // Catch invalid JSON syntax errors (like comments or trailing commas in client request body)
   if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
     return res.status(400).json({
       success: false,

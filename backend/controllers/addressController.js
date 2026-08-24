@@ -88,17 +88,36 @@ const addAddress = async (req, res) => {
 };
 
 // ───────────────────────────────────────────────────────────────
-// Get All Addresses for Logged-in Customer
-// GET /api/v1/addresses
+// Get All Addresses for Logged-in Customer (Paginated)
+// GET /api/v1/addresses/view-address
 // ───────────────────────────────────────────────────────────────
 const getAddresses = async (req, res) => {
   try {
     const customerId = req.customerId;
-    const addresses = await Address.find({ customer: customerId }).sort({ isDefault: -1, createdAt: -1 }).lean();
+    const { page = 1, limit = 10 } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [addresses, total] = await Promise.all([
+      Address.find({ customer: customerId })
+        .sort({ isDefault: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Address.countDocuments({ customer: customerId }),
+    ]);
 
     return res.status(200).json({
       success: true,
       data: addresses,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      },
     });
   } catch (error) {
     console.error("Get Addresses Error:", error);

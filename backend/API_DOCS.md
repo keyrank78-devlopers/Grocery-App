@@ -12,6 +12,20 @@ Authorization: Bearer <accessToken>
 
 ---
 
+## 🌟 CUSTOMER APP PUBLIC ENDPOINTS
+
+Clean, RESTful endpoints for Customer Mobile App / Web App storefront:
+
+- **Categories**: `GET /api/v1/categories?page=1&limit=10&search=fruit&status=active`
+- **Single Category**: `GET /api/v1/categories/:id`
+- **Sub-Categories**: `GET /api/v1/sub-categories?category_id=CAT-1001&page=1&limit=10&search=milk`
+- **Single Sub-Category**: `GET /api/v1/sub-categories/:id`
+- **Products**: `GET /api/v1/products?search=milk&category=...&subCategory=...&page=1&limit=10`
+- **Single Product**: `GET /api/v1/products/:id` (by Mongo ID or SKU)
+- **Home Banners**: `GET /api/v1/banners?page=1&limit=20`
+
+---
+
 ## 1. AUTH APIs
 
 ### 1.1 Admin Register

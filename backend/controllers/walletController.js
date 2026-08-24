@@ -14,24 +14,60 @@ const getRazorpayInstance = () => {
 // Get Wallet Balance and History
 // GET /api/v1/wallet/balance
 // ───────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────
+// Get Wallet Balance and History (Paginated & Filterable)
+// GET /api/v1/wallet/balance
+// ───────────────────────────────────────────────────────────────
 const getWalletBalance = async (req, res) => {
   try {
     const customerId = req.customerId;
-    const customer = await Customer.findOne({ customer_id: customerId });
+    const { page = 1, limit = 10, type, search = "" } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const customer = await Customer.findById(customerId).select("walletBalance customer_id name").lean();
 
     if (!customer) {
       return res.status(404).json({ success: false, message: "Customer not found" });
     }
 
-    const transactions = await WalletTransaction.find({ customer: customer._id })
-      .sort({ createdAt: -1 })
-      .limit(50); // Get latest 50
+    const filter = { customer: customer._id };
+
+    if (type && ["Credit", "Debit"].includes(type)) {
+      filter.type = type;
+    }
+
+    if (search.trim()) {
+      const searchRegex = new RegExp(search.trim(), "i");
+      filter.$or = [
+        { description: searchRegex },
+        { transactionId: searchRegex },
+      ];
+    }
+
+    const [transactions, total] = await Promise.all([
+      WalletTransaction.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      WalletTransaction.countDocuments(filter),
+    ]);
 
     return res.status(200).json({
       success: true,
       data: {
-        balance: customer.walletBalance,
+        balance: customer.walletBalance || 0,
         transactions,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+        },
       },
     });
   } catch (error) {

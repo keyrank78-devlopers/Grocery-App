@@ -382,11 +382,33 @@ const toggleCustomerStatus = async (req, res) => {
   }
 };
 
+// ─── Customer Logout ─────────────────────────────────────────
+// POST /api/auth/customer/logout
+const customerLogout = async (req, res) => {
+  try {
+    const customerId = req.customerId;
+    if (customerId) {
+      await Customer.updateOne({ _id: customerId }, { $unset: { refreshToken: 1 } });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    console.error("Customer Logout Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 module.exports = {
   sendOTP,
   verifyOTP,
   getCustomerProfile,
   updateCustomerProfile,
+  customerLogout,
   getAllCustomers,
   getCustomerById,
   toggleCustomerStatus,

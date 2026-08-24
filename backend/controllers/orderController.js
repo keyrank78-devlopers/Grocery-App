@@ -328,19 +328,51 @@ const checkout = async (req, res) => {
 };
 
 // ───────────────────────────────────────────────────────────────
-// Get All Orders for Customer
-// GET /api/v1/orders
+// Get All Orders for Customer (Paginated & Filterable)
+// GET /api/v1/orders/view-orders
 // ───────────────────────────────────────────────────────────────
 const getOrders = async (req, res) => {
   try {
     const customerId = req.customerId;
-    const orders = await Order.find({ customer: customerId })
-      .sort({ createdAt: -1 })
-      .lean();
+    const { page = 1, limit = 10, search = "", orderStatus } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const filter = { customer: customerId };
+
+    if (orderStatus) {
+      filter.orderStatus = orderStatus;
+    }
+
+    if (search.trim()) {
+      const searchRegex = new RegExp(search.trim(), "i");
+      filter.$or = [
+        { order_id: searchRegex },
+        { orderStatus: searchRegex },
+        { "items.name": searchRegex },
+      ];
+    }
+
+    const [orders, total] = await Promise.all([
+      Order.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Order.countDocuments(filter),
+    ]);
 
     return res.status(200).json({
       success: true,
       data: orders,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      },
     });
   } catch (error) {
     console.error("Get Orders Error:", error);
@@ -905,6 +937,101 @@ const qcCheck = async (req, res) => {
   }
 };
 
+// ───────────────────────────────────────────────────────────────
+// Cancel Order (Customer)
+// PUT /api/v1/orders/:id/cancel
+// ───────────────────────────────────────────────────────────────
+const cancelOrder = async (req, res) => {
+  try {
+    const customerId = req.customerId;
+    const { id } = req.params;
+    const { reason = "Cancelled by customer" } = req.body;
+
+    const query = {};
+    if (id.startsWith("ORD-")) {
+      query.order_id = id;
+    } else {
+      query._id = id;
+    }
+    if (customerId) {
+      query.customer = customerId;
+    }
+
+    const order = await Order.findOne(query);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found.",
+      });
+    }
+
+    if (order.orderStatus === "Cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "This order is already cancelled.",
+      });
+    }
+
+    const cancellableStatuses = ["Pending", "Placed", "Accepted", "Processing"];
+    if (!cancellableStatuses.includes(order.orderStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel order with status '${order.orderStatus}'. Orders can only be cancelled before they are out for delivery.`,
+      });
+    }
+
+    // 1. Revert Stock Quantities
+    for (const item of order.items) {
+      await Product.findByIdAndUpdate(item.product, {
+        $inc: { stockQuantity: item.quantity },
+      });
+    }
+
+    // 2. Refund to Customer Wallet if payment was completed
+    let refundIssued = false;
+    if (order.paymentInfo.status === "Paid" || order.paymentInfo.method === "Wallet") {
+      const CustomerModel = require("../models/Customer");
+      const customer = await CustomerModel.findById(order.customer);
+      if (customer) {
+        customer.walletBalance += order.pricing.totalPrice;
+        await customer.save();
+
+        const WalletTransaction = require("../models/WalletTransaction");
+        await WalletTransaction.create({
+          customer: customer._id,
+          amount: order.pricing.totalPrice,
+          type: "Credit",
+          description: `Refund for Cancelled Order ${order.order_id}`,
+        });
+
+        refundIssued = true;
+        order.paymentInfo.status = "Refunded";
+      }
+    }
+
+    // 3. Update Order Status
+    order.orderStatus = "Cancelled";
+    order.history.push({
+      status: "Cancelled",
+      message: `Order cancelled. Reason: ${reason}.${refundIssued ? " Refund credited to wallet." : ""}`,
+    });
+
+    await order.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Order cancelled successfully.${refundIssued ? " Refund of ₹" + order.pricing.totalPrice + " credited to your wallet." : ""}`,
+      data: order,
+    });
+  } catch (error) {
+    console.error("Cancel Order Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error while cancelling order.",
+    });
+  }
+};
+
 module.exports = {
   checkout,
   getOrders,
@@ -918,4 +1045,5 @@ module.exports = {
   approveReturn,
   markReturned,
   qcCheck,
+  cancelOrder,
 };

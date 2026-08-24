@@ -313,24 +313,53 @@ const applyCoupon = async (req, res) => {
   }
 };
 
-// Get Active Coupons (Customer)
+// Get Active Coupons (Customer - Paginated & Filterable)
 // GET /api/v1/coupons/active
 const getActiveCoupons = async (req, res) => {
   try {
+    const { page = 1, limit = 10, search = "" } = req.query;
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
+
     const currentDate = new Date();
-    const activeCoupons = await Coupon.find({
+    const filter = {
       isActive: true,
       expiryDate: { $gt: currentDate },
-      $or: [
-        { startDate: { $exists: false } },
-        { startDate: null },
-        { startDate: { $lte: currentDate } }
-      ]
-    }).select("-__v").sort({ expiryDate: 1 }).lean();
+      $and: [
+        {
+          $or: [
+            { startDate: { $exists: false } },
+            { startDate: null },
+            { startDate: { $lte: currentDate } },
+          ],
+        },
+      ],
+    };
+
+    if (search.trim()) {
+      filter.$and.push({ code: new RegExp(search.trim(), "i") });
+    }
+
+    const [activeCoupons, total] = await Promise.all([
+      Coupon.find(filter)
+        .select("-__v")
+        .sort({ expiryDate: 1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Coupon.countDocuments(filter),
+    ]);
 
     return res.status(200).json({
       success: true,
       data: activeCoupons,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      },
     });
   } catch (error) {
     console.error("Get Active Coupons Error:", error);

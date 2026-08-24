@@ -269,6 +269,15 @@ const getProductById = async (req, res) => {
       });
     }
 
+    const Review = require("../models/Review");
+    const recentReviews = await Review.find({ product: product._id })
+      .populate("customer", "name customer_id")
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+
+    product.recentReviews = recentReviews;
+
     return res.status(200).json({
       success: true,
       data: product,
@@ -583,6 +592,65 @@ const toggleProductStatus = async (req, res) => {
   }
 };
 
+// ───────────────────────────────────────────────────────────────
+// Get Product Search Suggestions / Autocomplete
+// GET /api/v1/products/search-suggestions?query=mi
+// ───────────────────────────────────────────────────────────────
+const getSearchSuggestions = async (req, res) => {
+  try {
+    const { query = "" } = req.query;
+    const trimmedQuery = query.trim();
+
+    if (!trimmedQuery) {
+      return res.status(200).json({
+        success: true,
+        suggestions: [],
+        topProducts: [],
+      });
+    }
+
+    const searchRegex = new RegExp(trimmedQuery, "i");
+
+    // Fetch top 5 matching active products (ultra-light select)
+    const matchingProducts = await Product.find({
+      isActive: true,
+      $or: [{ name: searchRegex }, { sku: searchRegex }],
+    })
+      .select("product_id name sellPrice mrp image stockQuantity unit")
+      .limit(5)
+      .lean();
+
+    // Extract unique product name suggestions
+    const suggestions = Array.from(
+      new Set(matchingProducts.map((p) => p.name))
+    );
+
+    const topProducts = matchingProducts.map((p) => ({
+      id: p._id,
+      product_id: p.product_id,
+      name: p.name,
+      sellPrice: p.sellPrice,
+      mrp: p.mrp,
+      unit: p.unit,
+      stockQuantity: p.stockQuantity,
+      image: p.image?.url || "",
+    }));
+
+    return res.status(200).json({
+      success: true,
+      query: trimmedQuery,
+      suggestions,
+      topProducts,
+    });
+  } catch (error) {
+    console.error("Get Search Suggestions Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error fetching search suggestions",
+    });
+  }
+};
+
 module.exports = {
   createProduct,
   getAllProducts,
@@ -590,4 +658,5 @@ module.exports = {
   updateProduct,
   deleteProduct,
   toggleProductStatus,
+  getSearchSuggestions,
 };

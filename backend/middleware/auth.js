@@ -69,20 +69,32 @@ const optionalCustomerAuth = async (req, res, next) => {
   }
 };
 
+const crypto = require("crypto");
+
 const resolveCartSession = (req, res, next) => {
   const customerId = req.customerId;
-  const guestId = req.body?.guestId || req.query?.guestId || req.headers["x-guest-id"];
+  let guestId =
+    req.cookies?.guestId ||
+    req.headers["x-guest-id"] ||
+    req.body?.guestId ||
+    req.query?.guestId;
 
+  // If customer is NOT logged in and NO guestId is provided, backend auto-generates one
   if (!customerId && !guestId) {
-    return res.status(400).json({
-      success: false,
-      message: "Authorization token or guestId session identifier is required",
+    guestId = "guest_" + crypto.randomUUID();
+    // Set HTTP-Only Cookie (30 days validity)
+    res.cookie("guestId", guestId, {
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      sameSite: "lax",
     });
+    // Also attach to response header for mobile apps
+    res.setHeader("x-guest-id", guestId);
   }
 
   req.cartSession = {
     customerId,
-    guestId: (guestId && typeof guestId === "string") ? guestId.trim() : null,
+    guestId: guestId ? String(guestId).trim() : null,
   };
   next();
 };

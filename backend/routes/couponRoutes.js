@@ -16,148 +16,82 @@ const router = express.Router();
 /**
  * @swagger
  * tags:
- *   name: Coupon
- *   description: Coupon management
+ *   - name: Customer - Coupons & Offers
+ *     description: Customer discount coupons and promotional offers endpoints
  */
 
 // ─── Admin-only Coupon Endpoints ─────────────────────────────────────────────
-
-/**
- * @swagger
- * /coupons/admin:
- *   post:
- *     summary: Create a new coupon
- *     tags: [Coupon]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       201:
- *         description: Coupon created
- */
 router.post("/admin", verifyAdminToken, createCoupon);
-
-/**
- * @swagger
- * /coupons/admin:
- *   get:
- *     summary: Get all coupons
- *     tags: [Coupon]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Coupons retrieved
- */
 router.get("/admin", verifyAdminToken, getAllCoupons);
-
-/**
- * @swagger
- * /coupons/admin/{id}:
- *   get:
- *     summary: Get single coupon
- *     tags: [Coupon]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Coupon retrieved
- */
 router.get("/admin/:id", verifyAdminToken, getCouponById);
-
-/**
- * @swagger
- * /coupons/admin/{id}:
- *   put:
- *     summary: Update coupon
- *     tags: [Coupon]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Coupon updated
- */
 router.put("/admin/:id", verifyAdminToken, updateCoupon);
-
-/**
- * @swagger
- * /coupons/admin/{id}:
- *   delete:
- *     summary: Delete coupon
- *     tags: [Coupon]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Coupon deleted
- */
 router.delete("/admin/:id", verifyAdminToken, deleteCoupon);
-
-/**
- * @swagger
- * /coupons/admin/{id}/toggle-status:
- *   patch:
- *     summary: Toggle coupon status
- *     tags: [Coupon]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Status toggled
- */
 router.patch("/admin/:id/toggle-status", verifyAdminToken, toggleCouponStatus);
 
 // ─── Customer-only Coupon Endpoints ──────────────────────────────────────────
 
 /**
  * @swagger
- * /coupons/apply:
- *   post:
- *     summary: Apply coupon to cart
- *     tags: [Coupon]
+ * /coupons/active:
+ *   get:
+ *     summary: View all active & valid discount coupons for customer (Paginated & Filterable)
+ *     tags: [Customer - Coupons & Offers]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search active coupons by promo code (e.g. WELCOME50)
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of coupons per page (max 50)
  *     responses:
  *       200:
- *         description: Coupon applied successfully
+ *         description: Active coupons list retrieved successfully
+ *       401:
+ *         description: Unauthorized
  */
-router.post("/apply", verifyCustomerToken, applyCoupon);
+router.get("/active", verifyCustomerToken, getActiveCoupons);
 
 /**
  * @swagger
- * /coupons/active:
- *   get:
- *     summary: Get all active coupons (Customer)
- *     tags: [Coupon]
+ * /coupons/apply:
+ *   post:
+ *     summary: Validate & Apply coupon code to current cart
+ *     tags: [Customer - Coupons & Offers]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [couponCode]
+ *             properties:
+ *               couponCode:
+ *                 type: string
+ *                 description: Coupon promo code
+ *                 example: "WELCOME50"
  *     responses:
  *       200:
- *         description: Active coupons retrieved
+ *         description: Coupon applied successfully with pricing preview breakdown
+ *       400:
+ *         description: Invalid or expired coupon code / Minimum purchase amount not met / Cart is empty
+ *       401:
+ *         description: Unauthorized
  */
-router.get("/active", verifyCustomerToken, getActiveCoupons);
+router.post("/apply", verifyCustomerToken, applyCoupon);
 
 module.exports = router;
