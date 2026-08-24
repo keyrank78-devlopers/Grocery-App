@@ -2,3 +2,15 @@
 [2026-08-24 18:45:37] INFO: Server running on port 5000 in development mode
 [2026-08-24 18:45:52] INFO: Server running on port 5000 in development mode
 [2026-08-24 18:46:42] WARN: SIGINT received. Shutting down gracefully...
+[2026-08-24 18:49:36] INFO: Server running on port 5000 in development mode
+[2026-08-24 18:50:09] INFO: Server running on port 5000 in development mode
+[2026-08-24 18:50:24] HTTP: [0mGET /api-docs [36m302[0m 5.510 ms - 39[0m
+[2026-08-24 18:50:24] HTTP: [0mGET /api-docs/ [36m304[0m 3.641 ms - -[0m
+[2026-08-24 18:50:24] HTTP: [0mGET /api-docs/swagger-ui.css [36m304[0m 2.279 ms - -[0m
+[2026-08-24 18:50:24] HTTP: [0mGET /api-docs/swagger-ui-init.js [36m304[0m 0.529 ms - -[0m
+[2026-08-24 18:50:24] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [36m304[0m 2.050 ms - -[0m
+[2026-08-24 18:50:24] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [36m304[0m 2.183 ms - -[0m
+[2026-08-24 18:50:24] HTTP: [0mGET /api-docs/swagger-ui-init.js [36m304[0m 0.756 ms - -[0m
+[2026-08-24 18:50:24] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [36m304[0m 0.670 ms - -[0m
+[2026-08-24 18:50:24] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [36m304[0m 0.512 ms - -[0m
+[2026-08-24 18:50:45] WARN: SIGINT received. Shutting down gracefully...

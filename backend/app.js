@@ -100,8 +100,8 @@ app.use(compression());
 app.use(express.json({ limit: "15kb" })); // Max 15kb payload
 app.use(express.urlencoded({ extended: true, limit: "15kb" }));
 
-// 7. NoSQL Injection Sanitization — strips $ and . from req.body, req.params, req.query
-app.use(mongoSanitize());
+// 7. NoSQL Injection Sanitization — sirf API routes pe apply karo, Swagger UI pe nahi
+app.use("/api", mongoSanitize());
 
 // ─── API Routes ─────────────────────────────────────────────────────────────
 app.use("/api/v1/auth", authRoutes);
