@@ -17,6 +17,8 @@ const addAddress = async (req, res) => {
     }
 
     const {
+      name,
+      mobile,
       alternateMobile,
       addressLine1,
       addressLine2,
@@ -37,8 +39,8 @@ const addAddress = async (req, res) => {
       });
     }
 
-    const name = customer.name;
-    const mobile = customer.mobile;
+    const finalName = name ? name.trim() : customer.name;
+    const finalMobile = mobile ? mobile.trim() : customer.mobile;
 
     // Check if this is the first address for the customer
     const existingAddressesCount = await Address.countDocuments({ customer: customerId });
@@ -56,8 +58,8 @@ const addAddress = async (req, res) => {
 
     const newAddress = await Address.create({
       customer: customerId,
-      name: name.trim(),
-      mobile: mobile.trim(),
+      name: finalName,
+      mobile: finalMobile,
       alternateMobile: alternateMobile ? alternateMobile.trim() : undefined,
       addressLine1: addressLine1.trim(),
       addressLine2: addressLine2 ? addressLine2.trim() : undefined,

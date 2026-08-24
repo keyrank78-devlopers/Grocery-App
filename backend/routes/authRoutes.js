@@ -18,6 +18,54 @@ const router = express.Router();
 // ─── Admin / Staff Auth Endpoints ─────────────────────────────────────────────
 router.post("/register", adminRegister);
 router.post("/login", login);
+/**
+ * @swagger
+ * /auth/refresh-token:
+ *   post:
+ *     summary: Refresh access token
+ *     description: Exchange a valid refresh token (provided via cookie or request body) for a new access token and rotated refresh token. Works for Customers, Admins, and Staff.
+ *     tags: [Customer Authentication]
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: Refresh token (Optional if sent via httpOnly cookie)
+ *                 example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *     responses:
+ *       200:
+ *         description: Token refreshed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Token refreshed successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     accessToken:
+ *                       type: string
+ *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                     refreshToken:
+ *                       type: string
+ *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *       400:
+ *         description: Refresh token is required
+ *       401:
+ *         description: Invalid or expired refresh token
+ *       403:
+ *         description: Account is deactivated
+ */
 router.post("/refresh-token", refreshAccessToken);
 router.post("/logout", logout);
 router.get("/me", verifyStaffToken, getMe);
@@ -44,10 +92,6 @@ router.post("/profile/avatar", verifyAdminToken, uploadAvatarImage, uploadAvatar
  *                 type: string
  *                 description: 10-digit mobile number
  *                 example: "9876543210"
- *               name:
- *                 type: string
- *                 description: Customer full name (Required for new registration)
- *                 example: "Ravi Kumar"
  *     responses:
  *       200:
  *         description: OTP sent successfully

@@ -63,13 +63,23 @@ router.get("/view-address", verifyCustomerToken, getAddresses);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [street, city, state, pincode]
+ *             required: [addressLine1, city, state, pincode, longitude, latitude]
  *             properties:
  *               name:
  *                 type: string
- *                 example: "Home"
- *               street:
+ *                 description: Recipient name (Optional, defaults to Customer profile name)
+ *                 example: "Ravi Kumar"
+ *               mobile:
  *                 type: string
+ *                 description: Recipient mobile number (Optional, defaults to Customer profile mobile)
+ *                 example: "9876543210"
+ *               addressLine1:
+ *                 type: string
+ *                 description: Flat, House no., Building, Company, Apartment
+ *                 example: "Flat No 405, Block B"
+ *               addressLine2:
+ *                 type: string
+ *                 description: Area, Street, Sector, Village
  *                 example: "123 Main Street, Sector 15"
  *               city:
  *                 type: string
@@ -83,10 +93,24 @@ router.get("/view-address", verifyCustomerToken, getAddresses);
  *               landmark:
  *                 type: string
  *                 example: "Near City Park"
+ *               addressType:
+ *                 type: string
+ *                 enum: [Home, Work, Other]
+ *                 default: Home
+ *                 example: "Home"
+ *               alternateMobile:
+ *                 type: string
+ *                 example: "9876543211"
  *               isDefault:
  *                 type: boolean
  *                 default: false
  *                 example: true
+ *               longitude:
+ *                 type: number
+ *                 example: 77.3910
+ *               latitude:
+ *                 type: number
+ *                 example: 28.5355
  *     responses:
  *       201:
  *         description: Address created successfully
@@ -143,10 +167,21 @@ router.get("/single-address/:id", verifyCustomerToken, getAddressById);
  *             properties:
  *               name:
  *                 type: string
- *                 example: "Office"
- *               street:
+ *                 description: Recipient name (updates profile name stored on address)
+ *                 example: "Ravi Kumar"
+ *               mobile:
  *                 type: string
- *                 example: "456 Tech Park"
+ *                 description: Recipient mobile
+ *                 example: "9876543210"
+ *               alternateMobile:
+ *                 type: string
+ *                 example: "9876543211"
+ *               addressLine1:
+ *                 type: string
+ *                 example: "Flat No 405, Block B"
+ *               addressLine2:
+ *                 type: string
+ *                 example: "123 Main Street, Sector 15"
  *               city:
  *                 type: string
  *                 example: "Noida"
@@ -159,9 +194,19 @@ router.get("/single-address/:id", verifyCustomerToken, getAddressById);
  *               landmark:
  *                 type: string
  *                 example: "Tower B"
+ *               addressType:
+ *                 type: string
+ *                 enum: [Home, Work, Other]
+ *                 example: "Work"
  *               isDefault:
  *                 type: boolean
  *                 example: true
+ *               longitude:
+ *                 type: number
+ *                 example: 77.3910
+ *               latitude:
+ *                 type: number
+ *                 example: 28.5355
  *     responses:
  *       200:
  *         description: Address updated successfully

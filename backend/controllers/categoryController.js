@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Category = require("../models/Category");
 const { cloudinary } = require("../config/cloudinary");
 const generateCustomId = require("../utils/generateCustomId");
@@ -128,10 +129,15 @@ const getAllCategories = async (req, res) => {
 // ───────────────────────────────────────────────────────────────
 const getCategoryById = async (req, res) => {
   try {
-    const category = await Category.findOne({
+    const query = {
       $or: [{ category_id: req.params.id }, { slug: req.params.id }],
       isActive: true,
-    })
+    };
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      query.$or.push({ _id: req.params.id });
+    }
+
+    const category = await Category.findOne(query)
       .select("-__v")
       .lean();
 
@@ -163,7 +169,11 @@ const updateCategory = async (req, res) => {
   try {
     const { name, isActive } = req.body;
 
-    const category = await Category.findOne({ category_id: req.params.id });
+    const query = mongoose.Types.ObjectId.isValid(req.params.id)
+      ? { $or: [{ category_id: req.params.id }, { _id: req.params.id }] }
+      : { category_id: req.params.id };
+
+    const category = await Category.findOne(query);
 
     if (!category) {
       if (req.file?.public_id) {
@@ -238,7 +248,11 @@ const updateCategory = async (req, res) => {
 // ───────────────────────────────────────────────────────────────
 const deleteCategory = async (req, res) => {
   try {
-    const category = await Category.findOne({ category_id: req.params.id });
+    const query = mongoose.Types.ObjectId.isValid(req.params.id)
+      ? { $or: [{ category_id: req.params.id }, { _id: req.params.id }] }
+      : { category_id: req.params.id };
+
+    const category = await Category.findOne(query);
 
     if (!category) {
       return res.status(404).json({

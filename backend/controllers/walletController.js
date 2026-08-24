@@ -89,7 +89,7 @@ const topUpWallet = async (req, res) => {
       return res.status(400).json({ success: false, message: "Minimum top-up amount is ₹10" });
     }
 
-    const customer = await Customer.findOne({ customer_id: customerId });
+    const customer = await Customer.findById(customerId);
     if (!customer) {
       return res.status(404).json({ success: false, message: "Customer not found" });
     }
@@ -141,7 +141,7 @@ const verifyTopUp = async (req, res) => {
       return res.status(400).json({ success: false, message: "Payment verification failed" });
     }
 
-    const customer = await Customer.findOne({ customer_id: customerId });
+    const customer = await Customer.findById(customerId);
     if (!customer) {
       return res.status(404).json({ success: false, message: "Customer not found" });
     }

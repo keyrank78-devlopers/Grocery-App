@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const SubCategory = require("../models/SubCategory");
 const Category = require("../models/Category");
 const { cloudinary } = require("../config/cloudinary");
@@ -20,10 +21,15 @@ const createSubCategory = async (req, res) => {
     }
 
     // Validate parent category exists and is active
-    const parentCategory = await Category.findOne({
-      category_id,
+    const parentCategoryQuery = {
+      $or: [{ category_id }],
       isActive: true,
-    }).lean();
+    };
+    if (mongoose.Types.ObjectId.isValid(category_id)) {
+      parentCategoryQuery.$or.push({ _id: category_id });
+    }
+
+    const parentCategory = await Category.findOne(parentCategoryQuery).lean();
 
     if (!parentCategory) {
       if (req.file?.public_id) await cloudinary.uploader.destroy(req.file.public_id);
@@ -97,7 +103,13 @@ const getAllSubCategories = async (req, res) => {
 
     // Filter by parent category_id if provided
     if (category_id) {
-      const parentCategory = await Category.findOne({ category_id }).select("_id").lean();
+      const parentCategoryQuery = {
+        $or: [{ category_id }]
+      };
+      if (mongoose.Types.ObjectId.isValid(category_id)) {
+        parentCategoryQuery.$or.push({ _id: category_id });
+      }
+      const parentCategory = await Category.findOne(parentCategoryQuery).select("_id").lean();
       if (!parentCategory) {
         return res.status(404).json({
           success: false,
@@ -140,9 +152,14 @@ const getAllSubCategories = async (req, res) => {
 // ───────────────────────────────────────────────────────────────
 const getSubCategoryById = async (req, res) => {
   try {
-    const subCategory = await SubCategory.findOne({
+    const query = {
       $or: [{ sub_category_id: req.params.id }, { slug: req.params.id }],
-    })
+    };
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      query.$or.push({ _id: req.params.id });
+    }
+
+    const subCategory = await SubCategory.findOne(query)
       .select("-__v")
       .populate("category", "category_id name slug")
       .lean();
@@ -169,7 +186,11 @@ const updateSubCategory = async (req, res) => {
   try {
     const { name, category_id, isActive } = req.body;
 
-    const subCategory = await SubCategory.findOne({ sub_category_id: req.params.id });
+    const query = mongoose.Types.ObjectId.isValid(req.params.id)
+      ? { $or: [{ sub_category_id: req.params.id }, { _id: req.params.id }] }
+      : { sub_category_id: req.params.id };
+
+    const subCategory = await SubCategory.findOne(query);
 
     if (!subCategory) {
       if (req.file?.public_id) await cloudinary.uploader.destroy(req.file.public_id);
@@ -182,10 +203,15 @@ const updateSubCategory = async (req, res) => {
     // If changing parent category, validate new category
     let newParentId = subCategory.category;
     if (category_id) {
-      const parentCategory = await Category.findOne({
-        category_id,
+      const parentCategoryQuery = {
+        $or: [{ category_id }],
         isActive: true,
-      }).lean();
+      };
+      if (mongoose.Types.ObjectId.isValid(category_id)) {
+        parentCategoryQuery.$or.push({ _id: category_id });
+      }
+
+      const parentCategory = await Category.findOne(parentCategoryQuery).lean();
 
       if (!parentCategory) {
         if (req.file?.public_id) await cloudinary.uploader.destroy(req.file.public_id);
@@ -248,7 +274,11 @@ const updateSubCategory = async (req, res) => {
 // ───────────────────────────────────────────────────────────────
 const deleteSubCategory = async (req, res) => {
   try {
-    const subCategory = await SubCategory.findOne({ sub_category_id: req.params.id });
+    const query = mongoose.Types.ObjectId.isValid(req.params.id)
+      ? { $or: [{ sub_category_id: req.params.id }, { _id: req.params.id }] }
+      : { sub_category_id: req.params.id };
+
+    const subCategory = await SubCategory.findOne(query);
 
     if (!subCategory) {
       return res.status(404).json({

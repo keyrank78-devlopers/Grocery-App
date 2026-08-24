@@ -45,7 +45,7 @@ const addToWishlist = async (req, res) => {
     wishlist.products.push({ product: productId, addedAt: new Date() });
     await wishlist.save();
 
-    await wishlist.populate("products.product", "name SKU slug price discountPrice images stock status isActive");
+    await wishlist.populate("products.product", "name sku slug mrp sellPrice image stockQuantity isActive");
 
     return res.status(200).json({
       success: true,
@@ -74,7 +74,12 @@ const removeFromWishlist = async (req, res) => {
       });
     }
 
-    let wishlist = await Wishlist.findOne({ customer: customerId });
+    const wishlist = await Wishlist.findOneAndUpdate(
+      { customer: customerId },
+      { $pull: { products: { product: productId } } },
+      { new: true }
+    );
+
     if (!wishlist) {
       return res.status(404).json({
         success: false,
@@ -82,12 +87,7 @@ const removeFromWishlist = async (req, res) => {
       });
     }
 
-    wishlist.products = wishlist.products.filter(
-      (item) => item.product.toString() !== productId.toString()
-    );
-
-    await wishlist.save();
-    await wishlist.populate("products.product", "name SKU slug price discountPrice images stock status isActive");
+    await wishlist.populate("products.product", "name sku slug mrp sellPrice image stockQuantity isActive");
 
     return res.status(200).json({
       success: true,
@@ -217,7 +217,7 @@ const toggleWishlist = async (req, res) => {
     }
 
     await wishlist.save();
-    await wishlist.populate("products.product", "name SKU slug price discountPrice images stock status isActive");
+    await wishlist.populate("products.product", "name sku slug mrp sellPrice image stockQuantity isActive");
 
     return res.status(200).json({
       success: true,

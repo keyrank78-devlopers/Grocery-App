@@ -2,6 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const Admin = require("../models/Admin");
 const Staff = require("../models/Staff");
+const Customer = require("../models/Customer");
 const generateTokens = require("../utils/generateTokens");
 const generateCustomId = require("../utils/generateCustomId");
 
@@ -194,7 +195,7 @@ const login = async (req, res) => {
 // ───────────────────────────────────────────────────────────────
 const refreshAccessToken = async (req, res) => {
   try {
-    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+    const refreshToken = req.body?.refreshToken || req.cookies?.refreshToken;
 
     if (!refreshToken) {
       return res.status(400).json({
@@ -218,6 +219,15 @@ const refreshAccessToken = async (req, res) => {
     let user;
     if (role === "admin") {
       user = await Admin.findById(id).select("refreshToken");
+    } else if (role === "customer") {
+      user = await Customer.findById(id).select("refreshToken isActive");
+
+      if (user && !user.isActive) {
+        return res.status(403).json({
+          success: false,
+          message: "Your account is deactivated. Please contact support.",
+        });
+      }
     } else {
       user = await Staff.findById(id).select("refreshToken isActive");
 
@@ -241,6 +251,8 @@ const refreshAccessToken = async (req, res) => {
 
     if (role === "admin") {
       await Admin.findByIdAndUpdate(id, { refreshToken: newRefreshToken });
+    } else if (role === "customer") {
+      await Customer.findByIdAndUpdate(id, { refreshToken: newRefreshToken });
     } else {
       await Staff.findByIdAndUpdate(id, { refreshToken: newRefreshToken });
     }
@@ -281,7 +293,7 @@ const refreshAccessToken = async (req, res) => {
 // ───────────────────────────────────────────────────────────────
 const logout = async (req, res) => {
   try {
-    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+    const refreshToken = req.body?.refreshToken || req.cookies?.refreshToken;
 
     if (refreshToken) {
       // Clear refresh token in database for admin or staff

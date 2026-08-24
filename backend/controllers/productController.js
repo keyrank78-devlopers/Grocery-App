@@ -58,7 +58,10 @@ const createProduct = async (req, res) => {
     }
 
     // Verify Category and Subcategory
-    const catExists = await Category.findById(category).lean();
+    const categoryQuery = mongoose.isValidObjectId(category)
+      ? { _id: category }
+      : { category_id: category };
+    const catExists = await Category.findOne(categoryQuery).lean();
     if (!catExists) {
       return res.status(404).json({
         success: false,
@@ -66,7 +69,11 @@ const createProduct = async (req, res) => {
       });
     }
 
-    const subCatExists = await SubCategory.findOne({ _id: subCategory, category }).lean();
+    const subCategoryQuery = mongoose.isValidObjectId(subCategory)
+      ? { _id: subCategory, category: catExists._id }
+      : { sub_category_id: subCategory, category: catExists._id };
+
+    const subCatExists = await SubCategory.findOne(subCategoryQuery).lean();
     if (!subCatExists) {
       return res.status(400).json({
         success: false,
@@ -147,8 +154,8 @@ const createProduct = async (req, res) => {
     try {
       const product = await Product.create({
         name: name.trim(),
-        category,
-        subCategory,
+        category: catExists._id,
+        subCategory: subCatExists._id,
         description: description ? description.trim() : "",
         mrp: numericMrp,
         sellPrice: numericSellPrice,
@@ -332,23 +339,37 @@ const updateProduct = async (req, res) => {
     }
 
     // Verify Category and Subcategory references if updated
-    const finalCategory = category || product.category;
-    const finalSubCategory = subCategory || product.subCategory;
+    let resolvedCategoryId = product.category;
+    let resolvedSubCategoryId = product.subCategory;
     if (category || subCategory) {
-      const catExists = await Category.findById(finalCategory).lean();
+      const categoryToValidate = category || product.category;
+      
+      const categoryQuery = mongoose.isValidObjectId(categoryToValidate)
+        ? { _id: categoryToValidate }
+        : { category_id: categoryToValidate };
+        
+      const catExists = await Category.findOne(categoryQuery).lean();
       if (!catExists) {
         return res.status(404).json({
           success: false,
           message: "Category not found",
         });
       }
-      const subCatExists = await SubCategory.findOne({ _id: finalSubCategory, category: finalCategory }).lean();
+      resolvedCategoryId = catExists._id;
+
+      const subCategoryToValidate = subCategory || product.subCategory;
+      const subCategoryQuery = mongoose.isValidObjectId(subCategoryToValidate)
+        ? { _id: subCategoryToValidate, category: catExists._id }
+        : { sub_category_id: subCategoryToValidate, category: catExists._id };
+
+      const subCatExists = await SubCategory.findOne(subCategoryQuery).lean();
       if (!subCatExists) {
         return res.status(400).json({
           success: false,
           message: "Sub-category not found or does not belong to the selected Category",
         });
       }
+      resolvedSubCategoryId = subCatExists._id;
     }
 
     // Parse variants if updated
@@ -472,8 +493,8 @@ const updateProduct = async (req, res) => {
 
     // Apply remaining field updates
     if (name) product.name = name.trim();
-    if (category) product.category = category;
-    if (subCategory) product.subCategory = subCategory;
+    if (category) product.category = resolvedCategoryId;
+    if (subCategory) product.subCategory = resolvedSubCategoryId;
     if (description !== undefined) product.description = description.trim();
     if (mrp !== undefined) product.mrp = numericMrp;
     if (sellPrice !== undefined) product.sellPrice = numericSellPrice;
