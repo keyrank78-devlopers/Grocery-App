@@ -1509,3 +1509,75 @@ input:-webkit-autofill:focus {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ─── MARKDOWN EDITOR (MDEditor) GLOBAL FIXES ───────────────────────────────
+   These must be in index.css (loaded AFTER library CSS) to win specificity.
+   MDEditor overlaps: transparent textarea on top, pre layer underneath.
+   We make BOTH visible and dark so text always shows. ──────────────────── */
+
+/* ── MDEditor: Force light mode — white bg, dark text always ── */
+.w-md-editor,
+.w-md-editor *,
+.w-md-editor-content,
+.w-md-editor-area {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  color-scheme: light !important;
+}
+
+/* Textarea input — the actual editable layer */
+.w-md-editor-text-input,
+.w-md-editor-text-input textarea {
+  color: #1f2937 !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  background-color: #ffffff !important;
+  caret-color: #1f2937 !important;
+  opacity: 1 !important;
+}
+
+/* Pre layer — the syntax-highlighted mirror layer on top of textarea */
+.w-md-editor-text-pre,
+.w-md-editor-text-pre > code,
+.w-md-editor-text-pre code,
+.w-md-editor-text-pre code span,
+.w-md-editor-text-pre span,
+.w-md-editor-text-pre * {
+  color: #1f2937 !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  background: transparent !important;
+  opacity: 1 !important;
+}
+
+/* Toolbar */
+.w-md-editor-toolbar {
+  background-color: #f8f9fa !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+.w-md-editor-toolbar li > button {
+  color: #495057 !important;
+}
+.w-md-editor-toolbar li > button:hover,
+.w-md-editor-toolbar li > button:focus {
+  color: #0d6efd !important;
+  background-color: #e9ecef !important;
+}
+.w-md-editor-toolbar li > button svg {
+  color: inherit !important;
+  fill: currentColor !important;
+}
+
+/* Hide resize bar */
+.w-md-editor-bar { display: none !important; }
+
+/* Preview markdown output */
+.wmde-markdown,
+.wmde-markdown * {
+  color-scheme: light !important;
+  background: transparent !important;
+}
+.wmde-markdown { color: #1f2937 !important; }
+.wmde-markdown h1, .wmde-markdown h2, .wmde-markdown h3 { color: #111827 !important; }
+.wmde-markdown p, .wmde-markdown li { color: #374151 !important; }
+.wmde-markdown code { background: #f3f4f6 !important; color: #111827 !important; }
+.wmde-markdown pre { background: #f3f4f6 !important; }
+.wmde-markdown blockquote { border-left-color: #0d6efd !important; color: #6b7280 !important; }

@@ -11,6 +11,9 @@ const BannersView       = lazy(() => import("../components/admin/Banner/BannersV
 const WarehouseView     = lazy(() => import("../components/admin/Warehouse/WarehouseView"));
 const CouponsView       = lazy(() => import("../components/admin/Coupon/CouponsView"));
 const ProfileView       = lazy(() => import("../components/admin/Profile/ProfileView"));
+const CustomersView     = lazy(() => import("../components/admin/Customer/CustomersView"));
+const FaqView           = lazy(() => import("../components/admin/Faq/FaqView"));
+const PoliciesView      = lazy(() => import("../components/admin/Policy/PoliciesView"));
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icons = {
@@ -67,6 +70,21 @@ const Icons = {
   profile: (
     <svg className="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>
+  ),
+  customers: (
+    <svg className="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+  ),
+  faq: (
+    <svg className="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  policies: (
+    <svg className="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
     </svg>
   ),
 };
@@ -154,6 +172,33 @@ export const NAV_CONFIG = [
     section: "Administration",
     icon: Icons.warehouses,
     component: WarehouseView,
+    roles: ["admin"],
+    defaultFor: [],
+  },
+  {
+    id: "customers",
+    label: "Customers",
+    section: "Operations",
+    icon: Icons.customers,
+    component: CustomersView,
+    roles: ["admin", "sub_admin"],
+    defaultFor: [],
+  },
+  {
+    id: "faq",
+    label: "FAQs",
+    section: "Support",
+    icon: Icons.faq,
+    component: FaqView,
+    roles: ["admin", "sub_admin"],
+    defaultFor: [],
+  },
+  {
+    id: "policies",
+    label: "Policies",
+    section: "Support",
+    icon: Icons.policies,
+    component: PoliciesView,
     roles: ["admin"],
     defaultFor: [],
   },

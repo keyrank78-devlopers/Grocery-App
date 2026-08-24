@@ -91,6 +91,31 @@ const getFaqCategories = async (req, res) => {
   }
 };
 
+// ─── Get All FAQs (Admin — includes inactive) ────────────────────────────────
+const getAllFaqsAdmin = async (req, res) => {
+  try {
+    const { category, search } = req.query;
+    const filter = {};
+    if (category) filter.category = new RegExp(`^${category.trim()}$`, "i");
+    if (search) {
+      const rx = new RegExp(search.trim(), "i");
+      filter.$or = [{ question: rx }, { answer: rx }];
+    }
+
+    let faqs = await Faq.find(filter).sort({ displayOrder: 1, createdAt: -1 });
+
+    // If DB is empty and no filter applied, auto-seed DEFAULT_FAQS into DB
+    if (faqs.length === 0 && !category && !search) {
+      faqs = await Faq.insertMany(DEFAULT_FAQS);
+    }
+
+    return res.status(200).json({ success: true, data: faqs });
+  } catch (error) {
+    console.error("Get All FAQs Admin Error:", error.message);
+    return res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};
+
 // ─── Create FAQ (Admin Only) ──────────────────────────────────────────────────
 const createFaq = async (req, res) => {
   try {
@@ -221,6 +246,7 @@ const toggleFaqStatus = async (req, res) => {
 module.exports = {
   getFaqs,
   getFaqCategories,
+  getAllFaqsAdmin,
   createFaq,
   updateFaq,
   deleteFaq,

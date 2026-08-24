@@ -2,6 +2,7 @@ const express = require("express");
 const {
   getFaqs,
   getFaqCategories,
+  getAllFaqsAdmin,
   createFaq,
   updateFaq,
   deleteFaq,
@@ -68,6 +69,7 @@ router.get("/", getFaqs);
 router.get("/categories", getFaqCategories);
 
 // ─── Admin Endpoints ──────────────────────────────────────────────────────────
+router.get("/admin", getAllFaqsAdmin);                                          // Public — loads all FAQs (active + inactive) for admin panel
 router.post("/admin", verifyAdminToken, createFaq);
 router.put("/admin/:id", verifyAdminToken, updateFaq);
 router.delete("/admin/:id", verifyAdminToken, deleteFaq);
