@@ -113,8 +113,8 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: "/api/v1",
-        description: "Current Host Server",
+        url: "https://grocery-app-x6gf.onrender.com/api/v1",
+        description: "Production Server (Render)",
       },
       {
         url: "http://localhost:5000/api/v1",
@@ -157,7 +157,31 @@ const swaggerOptions = {
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Force redirect to ensure trailing slash is present (needed for relative assets in Swagger UI)
+app.use("/api-docs", (req, res, next) => {
+  if (req.originalUrl === "/api-docs") {
+    return res.redirect("/api-docs/");
+  }
+  next();
+});
+
+// Serve Swagger UI with relaxed Content Security Policy specifically for this route
+app.use(
+  "/api-docs",
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        "script-src": ["'self'", "'unsafe-inline'"],
+        "style-src": ["'self'", "'unsafe-inline'"],
+        "img-src": ["'self'", "data:", "validator.swagger.io"],
+      },
+    },
+  }),
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec)
+);
 
 // ─── Health check ───────────────────────────────────────────────────────────
 app.get("/api/health", (req, res) => {
