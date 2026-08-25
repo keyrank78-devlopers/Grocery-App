@@ -48,10 +48,11 @@ export default function CategoriesView() {
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${BASE_URL}/admin/get-categories`, {
+      const res = await axios.get(`${BASE_URL}/categories`, {
         params: { page, limit: 10, search: debouncedSearch, status: statusFilter },
         withCredentials: true 
       });
+      console.log("response of catgeories api",res);
       setCategories(res.data.data || []);
       setTotalPages(res.data.pagination?.totalPages || 1);
     } catch (err) {
@@ -76,7 +77,7 @@ export default function CategoriesView() {
       formData.append("name", newCatName.trim());
       if (addImage) formData.append("image", addImage);
 
-      const res = await axios.post(`${BASE_URL}/admin/categories`, formData, {
+      const res = await axios.post(`${BASE_URL}/categories`, formData, {
         withCredentials: true,
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -111,7 +112,7 @@ export default function CategoriesView() {
       if (editImage) formData.append("image", editImage);
 
       const res = await axios.put(
-        `${BASE_URL}/admin/udpate-categories/${editCat.category_id}`,
+        `${BASE_URL}/categories/${editCat.category_id}`,
         formData,
         {
           withCredentials: true,
@@ -140,7 +141,7 @@ export default function CategoriesView() {
     setDeletingId(deleteCat.category_id);
     try {
       await axios.delete(
-        `${BASE_URL}/admin/delete-categories/${deleteCat.category_id}`,
+        `${BASE_URL}/categories/${deleteCat.category_id}`,
         { withCredentials: true }
       );
       fetchCategories();
@@ -160,7 +161,7 @@ export default function CategoriesView() {
     setTogglingId(cat.category_id);
     try {
       const res = await axios.patch(
-        `${BASE_URL}/admin/categories/${cat.category_id}/toggle-status`,
+        `${BASE_URL}/categories/${cat.category_id}/toggle-status`,
         {},
         { withCredentials: true }
       );

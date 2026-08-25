@@ -32,7 +32,7 @@ export default function BannersView() {
   const fetchBanners = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${BASE_URL}/admin/banners`, {
+      const res = await axios.get(`${BASE_URL}/banners/admin/all`, {
         params: { page, limit: 10 },
         withCredentials: true 
       });
@@ -62,7 +62,7 @@ export default function BannersView() {
       const formData = new FormData();
       formData.append("image", addImage);
 
-      const res = await axios.post(`${BASE_URL}/admin/banners`, formData, {
+      const res = await axios.post(`${BASE_URL}/banners`, formData, {
         withCredentials: true,
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -98,7 +98,7 @@ export default function BannersView() {
       formData.append("image", editImage);
 
       const res = await axios.put(
-        `${BASE_URL}/admin/update-banners/${editBanner.banner_id}`,
+        `${BASE_URL}/banners/${editBanner.banner_id}`,
         formData,
         {
           withCredentials: true,
@@ -126,7 +126,7 @@ export default function BannersView() {
     setDeletingId(deleteBanner.banner_id);
     try {
       await axios.delete(
-        `${BASE_URL}/admin/delete-banners/${deleteBanner.banner_id}`,
+        `${BASE_URL}/banners/${deleteBanner.banner_id}`,
         { withCredentials: true }
       );
       fetchBanners();
@@ -146,7 +146,7 @@ export default function BannersView() {
     setTogglingId(banner.banner_id);
     try {
       const res = await axios.patch(
-        `${BASE_URL}/admin/banners/${banner.banner_id}/toggle-status`,
+        `${BASE_URL}/banners/${banner.banner_id}/toggle-status`,
         {},
         { withCredentials: true }
       );

@@ -41,8 +41,8 @@ export default function AddProduct({ onCancel, onSuccess }) {
     const fetchDropdowns = async () => {
       try {
         const [catRes, subRes] = await Promise.all([
-          axios.get(`${BASE_URL}/admin/get-categories`, { withCredentials: true }),
-          axios.get(`${BASE_URL}/admin/get-sub-categories`, { withCredentials: true }),
+          axios.get(`${BASE_URL}/categories`, { withCredentials: true }),
+          axios.get(`${BASE_URL}/sub-categories`, { withCredentials: true }),
         ]);
         setCategories(catRes.data.data?.filter((c) => c.isActive) || []);
         setSubCategories(subRes.data.data?.filter((s) => s.isActive) || []);
@@ -143,7 +143,7 @@ export default function AddProduct({ onCancel, onSuccess }) {
         formData.append("variants", JSON.stringify(validVariants));
       }
 
-      const res = await axios.post(`${BASE_URL}/admin/products`, formData, {
+      const res = await axios.post(`${BASE_URL}/products`, formData, {
         withCredentials: true,
         headers: { "Content-Type": "multipart/form-data" },
       });

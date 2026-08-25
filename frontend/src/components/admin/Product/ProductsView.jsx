@@ -72,8 +72,8 @@ export default function ProductsView() {
     const fetchFilters = async () => {
       try {
         const [catRes, subRes] = await Promise.all([
-          axios.get(`${BASE_URL}/admin/get-categories`, { withCredentials: true }),
-          axios.get(`${BASE_URL}/admin/get-sub-categories`, { withCredentials: true }),
+          axios.get(`${BASE_URL}/categories`, { withCredentials: true }),
+          axios.get(`${BASE_URL}/sub-categories`, { withCredentials: true }),
         ]);
         setCategories(catRes.data.data?.filter(c => c.isActive) || []);
         setSubCategories(subRes.data.data?.filter(s => s.isActive) || []);
@@ -119,7 +119,7 @@ export default function ProductsView() {
         status: statusFilter,
       };
 
-      const res = await axios.get(`${BASE_URL}/admin/get-products`, {
+      const res = await axios.get(`${BASE_URL}/products`, {
         params,
         withCredentials: true,
       });
@@ -150,7 +150,7 @@ export default function ProductsView() {
     setTogglingId(prod.sku);
     try {
       const res = await axios.patch(
-        `${BASE_URL}/admin/products/${prod.sku}/toggle-status`,
+        `${BASE_URL}/products/${prod.sku}/toggle-status`,
         {},
         { withCredentials: true }
       );
@@ -172,7 +172,7 @@ export default function ProductsView() {
     if (!deleteProd) return;
     setDeletingId(deleteProd.sku);
     try {
-      await axios.delete(`${BASE_URL}/admin/delete-products/${deleteProd.sku}`, { withCredentials: true });
+      await axios.delete(`${BASE_URL}/products/${deleteProd.sku}`, { withCredentials: true });
       setDeleteProd(null);
       showToast("Product deleted successfully!", "success");
       fetchProducts(); // Reload grid

@@ -50,7 +50,7 @@ export default function SubCategoriesView() {
   const fetchSubCategories = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${BASE_URL}/admin/get-sub-categories`, {
+      const res = await axios.get(`${BASE_URL}/sub-categories`, {
         params: { 
           page, 
           limit: 10,
@@ -73,7 +73,7 @@ export default function SubCategoriesView() {
   // ── Fetch Parent Categories for dropdown ───────────────────────
   const fetchCategories = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/admin/get-categories`, { withCredentials: true });
+      const res = await axios.get(`${BASE_URL}/categories`, { withCredentials: true });
       setCategories(res.data.data || []);
     } catch (err) {
       console.error(err);
@@ -99,7 +99,7 @@ export default function SubCategoriesView() {
       formData.append("category_id", addForm.category_id);
       if (addImage) formData.append("image", addImage);
 
-      const res = await axios.post(`${BASE_URL}/admin/sub-categories`, formData, {
+      const res = await axios.post(`${BASE_URL}/sub-categories`, formData, {
         withCredentials: true,
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -138,7 +138,7 @@ export default function SubCategoriesView() {
       if (editImage) formData.append("image", editImage);
 
       const res = await axios.put(
-        `${BASE_URL}/admin/update-sub-categories/${editSub.sub_category_id}`,
+        `${BASE_URL}/sub-categories/${editSub.sub_category_id}`,
         formData,
         {
           withCredentials: true,
@@ -165,7 +165,7 @@ export default function SubCategoriesView() {
     setDeletingId(deleteSub.sub_category_id);
     try {
       await axios.delete(
-        `${BASE_URL}/admin/delete-sub-categories/${deleteSub.sub_category_id}`,
+        `${BASE_URL}/sub-categories/${deleteSub.sub_category_id}`,
         { withCredentials: true }
       );
       fetchSubCategories();
@@ -185,7 +185,7 @@ export default function SubCategoriesView() {
     setTogglingId(sub.sub_category_id);
     try {
       const res = await axios.patch(
-        `${BASE_URL}/admin/sub-categories/${sub.sub_category_id}/toggle-status`,
+        `${BASE_URL}/sub-categories/${sub.sub_category_id}/toggle-status`,
         {},
         { withCredentials: true }
       );

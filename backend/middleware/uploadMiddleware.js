@@ -1,5 +1,5 @@
 const multer = require("multer");
-const { uploadCategoryImage, uploadBannerImage } = require("../config/cloudinary");
+const { uploadCategoryImage, uploadBannerImage, uploadSubCategoryImage, IMAGE_MIMETYPES, IMAGE_EXT_REGEX } = require("../config/cloudinary");
 
 // Wraps multer upload in a promise so errors can be caught cleanly in controllers
 const handleCategoryImageUpload = (req, res, next) => {
@@ -26,6 +26,18 @@ const handleBannerImageUpload = (req, res, next) => {
   });
 };
 
+const handleSubCategoryImageUpload = (req, res, next) => {
+  uploadSubCategoryImage(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message || "Image upload failed",
+      });
+    }
+    next();
+  });
+};
+
 // Multer memory storage configuration for product files
 const productUploadConfig = multer({
   storage: multer.memoryStorage(),
@@ -37,14 +49,12 @@ const productUploadConfig = multer({
     const isVideo = file.fieldname === "video";
 
     if (isImage) {
-      const allowedMimetypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/x-png"];
-      const allowedExtensions = /\.(jpg|jpeg|png|webp)$/i;
-      const validMime = allowedMimetypes.includes(file.mimetype);
-      const validExt = allowedExtensions.test(file.originalname);
+      const validMime = IMAGE_MIMETYPES.includes(file.mimetype);
+      const validExt = IMAGE_EXT_REGEX.test(file.originalname);
       if (validMime || validExt) {
         cb(null, true);
       } else {
-        cb(new Error("Only jpg, jpeg, png, webp images are allowed for product image/images"), false);
+        cb(new Error("Only jpg, jpeg, png, webp, avif images are allowed for product image/images"), false);
       }
     } else if (isVideo) {
       const allowedMimetypes = ["video/mp4", "video/mpeg", "video/ogg", "video/webm", "video/quicktime"];
@@ -113,4 +123,4 @@ const handleProductUpload = (req, res, next) => {
   });
 };
 
-module.exports = { handleCategoryImageUpload, handleProductUpload, handleBannerImageUpload };
+module.exports = { handleCategoryImageUpload, handleSubCategoryImageUpload, handleProductUpload, handleBannerImageUpload };

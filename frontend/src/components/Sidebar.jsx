@@ -1,4 +1,5 @@
 import React from "react";
+import { NavLink } from "react-router-dom";
 import logo from "../assets/image/Keyrank-Logo.png";
 import { useAuth } from "../context/AuthContext";
 import { NAV_CONFIG } from "../config/navigationConfig";
@@ -9,15 +10,13 @@ const formatRole = (role) => {
   return role.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 };
 
-export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
+export default function Sidebar({ isOpen, onClose }) {
   const { user } = useAuth();
   const role = user?.role || "admin";
   const avatarLetter = user?.name ? user.name.charAt(0).toUpperCase() : "A";
 
-  // Config se filter karo — role ke hisaab se
+  // Role ke hisaab se filter + section group
   const allowedItems = NAV_CONFIG.filter((item) => item.roles.includes(role));
-
-  // Section wise group karo
   const sections = allowedItems.reduce((acc, item) => {
     const existing = acc.find((s) => s.label === item.section);
     if (existing) {
@@ -54,19 +53,15 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
           <div key={section.label}>
             <div className="sidebar-section-label">{section.label}</div>
             {section.items.map((item) => (
-              <a
-                key={item.id}
-                href="#"
-                className={`menu-item ${activeTab === item.id ? "active" : ""}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setActiveTab(item.id);
-                  onClose();
-                }}
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
+                onClick={onClose}
               >
                 {item.icon}
                 {item.label}
-              </a>
+              </NavLink>
             ))}
           </div>
         ))}
@@ -75,7 +70,7 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, onClose }) {
       {/* Footer */}
       <div className="sidebar-footer">
         <div className="user-profile">
-          <div 
+          <div
             className="user-avatar"
             style={user?.avatarUrl ? { background: `url(${user.avatarUrl}) center/cover no-repeat`, boxShadow: "none" } : {}}
           >
