@@ -44,3 +44,65 @@ TypeError: Cannot set property query of #<IncomingMessage> which has only a gett
 [2026-08-25 10:37:17] WARN: SIGINT received. Shutting down gracefully...
 [2026-08-25 10:37:48] INFO: Server running on port 5000 in development mode
 [2026-08-25 14:32:54] WARN: SIGINT received. Shutting down gracefully...
+[2026-08-29 12:45:44] INFO: Server running on port 5000 in development mode
+[2026-08-29 12:45:54] INFO: Server running on port 5000 in development mode
+[2026-08-29 12:49:56] INFO: Server running on port 5000 in development mode
+[2026-08-29 12:50:04] INFO: Server running on port 5000 in development mode
+[2026-08-29 12:50:15] INFO: Server running on port 5000 in development mode
+[2026-08-29 12:52:29] WARN: SIGINT received. Shutting down gracefully...
+[2026-08-29 12:54:36] INFO: Server running on port 5000 in development mode
+[2026-08-29 12:54:39] HTTP: [0mGET /api-docs/ [36m304[0m 7.339 ms - -[0m
+[2026-08-29 12:54:39] HTTP: [0mGET /api-docs/swagger-ui-init.js [32m200[0m 1.064 ms - -[0m
+[2026-08-29 12:54:39] HTTP: [0mGET /api-docs/swagger-ui.css [32m200[0m 5.409 ms - -[0m
+[2026-08-29 12:54:39] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [32m200[0m 16.500 ms - -[0m
+[2026-08-29 12:54:40] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [32m200[0m 10.257 ms - -[0m
+[2026-08-29 12:54:40] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [36m304[0m 1.947 ms - -[0m
+[2026-08-29 12:54:40] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [36m304[0m 1.503 ms - -[0m
+[2026-08-29 12:54:40] HTTP: [0mGET /api-docs/swagger-ui-init.js [32m200[0m 0.556 ms - -[0m
+[2026-08-29 12:57:33] INFO: Server running on port 5000 in development mode
+[2026-08-29 12:57:46] INFO: Server running on port 5000 in development mode
+[2026-08-29 12:57:48] INFO: Server running on port 5000 in development mode
+[2026-08-29 12:57:57] INFO: Server running on port 5000 in development mode
+[2026-08-29 12:58:12] HTTP: [0mGET /api-docs/ [36m304[0m 4.567 ms - -[0m
+[2026-08-29 12:58:12] HTTP: [0mGET /api-docs/swagger-ui.css [36m304[0m 2.250 ms - -[0m
+[2026-08-29 12:58:12] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [36m304[0m 4.885 ms - -[0m
+[2026-08-29 12:58:12] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [36m304[0m 3.710 ms - -[0m
+[2026-08-29 12:58:12] HTTP: [0mGET /api-docs/swagger-ui-init.js [32m200[0m 1.409 ms - -[0m
+[2026-08-29 12:58:12] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [36m304[0m 0.889 ms - -[0m
+[2026-08-29 12:58:12] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [36m304[0m 1.129 ms - -[0m
+[2026-08-29 12:58:12] HTTP: [0mGET /api-docs/swagger-ui-init.js [32m200[0m 0.744 ms - -[0m
+[2026-08-29 12:58:13] HTTP: [0mGET /api-docs/favicon-32x32.png [32m200[0m 4.107 ms - 628[0m
+[2026-08-29 12:58:23] INFO: Server running on port 5000 in development mode
+[2026-08-29 12:58:43] INFO: Server running on port 5000 in development mode
+[2026-08-29 12:59:36] HTTP: [0mGET /api-docs/ [36m304[0m 4.526 ms - -[0m
+[2026-08-29 12:59:36] HTTP: [0mGET /api-docs/swagger-ui.css [36m304[0m 1.449 ms - -[0m
+[2026-08-29 12:59:36] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [36m304[0m 1.329 ms - -[0m
+[2026-08-29 12:59:36] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [36m304[0m 2.313 ms - -[0m
+[2026-08-29 12:59:36] HTTP: [0mGET /api-docs/swagger-ui-init.js [32m200[0m 2.214 ms - -[0m
+[2026-08-29 12:59:36] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [36m304[0m 1.509 ms - -[0m
+[2026-08-29 12:59:36] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [36m304[0m 1.657 ms - -[0m
+[2026-08-29 12:59:36] HTTP: [0mGET /api-docs/swagger-ui-init.js [32m200[0m 1.261 ms - -[0m
+[2026-08-29 12:59:36] HTTP: [0mGET /api-docs/favicon-32x32.png [36m304[0m 0.819 ms - -[0m
+[2026-08-29 13:00:56] INFO: Server running on port 5000 in development mode
+[2026-08-29 13:01:05] INFO: Server running on port 5000 in development mode
+[2026-08-29 13:03:00] HTTP: [0mGET /api-docs/ [36m304[0m 4.400 ms - -[0m
+[2026-08-29 13:03:00] HTTP: [0mGET /api-docs/swagger-ui.css [36m304[0m 1.584 ms - -[0m
+[2026-08-29 13:03:00] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [36m304[0m 1.760 ms - -[0m
+[2026-08-29 13:03:00] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [36m304[0m 4.521 ms - -[0m
+[2026-08-29 13:03:00] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [36m304[0m 1.039 ms - -[0m
+[2026-08-29 13:03:00] HTTP: [0mGET /api-docs/swagger-ui-init.js [32m200[0m 1.759 ms - -[0m
+[2026-08-29 13:03:00] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [36m304[0m 0.687 ms - -[0m
+[2026-08-29 13:03:00] HTTP: [0mGET /api-docs/favicon-32x32.png [36m304[0m 0.787 ms - -[0m
+[2026-08-29 13:03:00] HTTP: [0mGET /api-docs/swagger-ui-init.js [32m200[0m 1.022 ms - -[0m
+[2026-08-29 13:03:27] HTTP: [0mGET /api/v1/admin/notifications?page=1&limit=10 [33m401[0m 2.008 ms - 63[0m
+[2026-08-29 13:14:28] INFO: Server running on port 5000 in development mode
+[2026-08-29 13:14:45] HTTP: [0mGET /api-docs/ [36m304[0m 4.024 ms - -[0m
+[2026-08-29 13:14:45] HTTP: [0mGET /api-docs/swagger-ui.css [36m304[0m 2.891 ms - -[0m
+[2026-08-29 13:14:45] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [36m304[0m 5.452 ms - -[0m
+[2026-08-29 13:14:45] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [36m304[0m 4.182 ms - -[0m
+[2026-08-29 13:14:45] HTTP: [0mGET /api-docs/swagger-ui-init.js [32m200[0m 2.021 ms - -[0m
+[2026-08-29 13:14:45] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [36m304[0m 1.040 ms - -[0m
+[2026-08-29 13:14:45] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [36m304[0m 1.263 ms - -[0m
+[2026-08-29 13:14:45] HTTP: [0mGET /api-docs/swagger-ui-init.js [32m200[0m 1.001 ms - -[0m
+[2026-08-29 13:14:45] HTTP: [0mGET /api-docs/favicon-32x32.png [36m304[0m 2.523 ms - -[0m
+[2026-08-29 13:15:13] WARN: SIGINT received. Shutting down gracefully...

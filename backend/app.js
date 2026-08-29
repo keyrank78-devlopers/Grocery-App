@@ -25,6 +25,7 @@ const policyRoutes = require("./routes/policyRoutes");
 const faqRoutes = require("./routes/faqRoutes");
 const locationRoutes = require("./routes/locationRoutes");
 const ticketRoutes = require("./routes/ticketRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
@@ -119,6 +120,7 @@ app.use("/api/v1/faqs", faqRoutes);
 app.use("/api/v1/location", locationRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/tickets", ticketRoutes);
+app.use("/api/v1/notifications", notificationRoutes);
 
 // ─── Swagger Setup ──────────────────────────────────────────────────────────
 const swaggerOptions = {

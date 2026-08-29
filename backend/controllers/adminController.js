@@ -3,8 +3,10 @@ const jwt = require("jsonwebtoken");
 const Admin = require("../models/Admin");
 const Staff = require("../models/Staff");
 const Customer = require("../models/Customer");
+const Notification = require("../models/Notification");
 const generateTokens = require("../utils/generateTokens");
 const generateCustomId = require("../utils/generateCustomId");
+const { sendMulticastNotification } = require("../utils/notificationHelper");
 
 // ───────────────────────────────────────────────────────────────
 // Admin Register
@@ -463,6 +465,142 @@ const uploadAvatar = async (req, res) => {
   }
 };
 
+// ───────────────────────────────────────────────────────────────
+// Broadcast Promotional Notification
+// POST /api/v1/admin/notifications/broadcast
+// ───────────────────────────────────────────────────────────────
+const broadcastNotification = async (req, res) => {
+  try {
+    const { title, body } = req.body;
+    let imageUrl = req.body.imageUrl || null;
+
+    if (!title || !body) {
+      // Clean up Cloudinary file if validation fails
+      if (req.file?.filename) {
+        const { deleteFromCloudinary } = require("../config/cloudinary");
+        await deleteFromCloudinary(req.file.filename).catch(() => { });
+      }
+      return res.status(400).json({ success: false, message: "Title and body are required for broadcast" });
+    }
+
+    // If an image file was uploaded, use its Cloudinary URL
+    if (req.file && req.file.path) {
+      imageUrl = req.file.path;
+    }
+
+    // Find all customers who have an fcmToken
+    const customers = await Customer.find({ fcmToken: { $ne: null } }, "fcmToken");
+    const tokens = customers.map(c => c.fcmToken).filter(t => t);
+
+    // Save notification to DB for history
+    const newNotification = new Notification({
+      title,
+      body,
+      imageUrl,
+      isGlobal: true, // It's a broadcast
+    });
+    await newNotification.save();
+
+    if (tokens.length === 0) {
+      // Notification is saved, but no mobile apps to ping
+      return res.status(200).json({ success: true, message: "Notification saved to history. No mobile apps found to receive push.", data: { successCount: 0, failureCount: 0 } });
+    }
+
+    // Firebase sendEachForMulticast can take max 500 tokens per call.
+    // If we have more than 500, we need to batch them.
+    const batchSize = 500;
+    let successCount = 0;
+    let failureCount = 0;
+
+    for (let i = 0; i < tokens.length; i += batchSize) {
+      const batchTokens = tokens.slice(i, i + batchSize);
+      const response = await sendMulticastNotification(batchTokens, title, body, imageUrl);
+      successCount += response.successCount || 0;
+      failureCount += response.failureCount || 0;
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Notification broadcast completed. Sent to ${successCount} users.`,
+      stats: {
+        totalTargeted: tokens.length,
+        successCount,
+        failureCount
+      }
+    });
+
+  } catch (error) {
+    console.error("Broadcast Notification Error:", error);
+    return res.status(500).json({ success: false, message: "Failed to send broadcast notification" });
+  }
+};
+
+// ───────────────────────────────────────────────────────────────
+// Get all notifications (history for admin) with pagination
+// GET /api/v1/admin/notifications?page=1&limit=10&search=sale
+// ───────────────────────────────────────────────────────────────
+const getNotificationHistory = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const query = {};
+    if (req.query.search) {
+      query.$or = [
+        { title: { $regex: req.query.search, $options: "i" } },
+        { body: { $regex: req.query.search, $options: "i" } }
+      ];
+    }
+
+    const notifications = await Notification.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+      
+    const total = await Notification.countDocuments(query);
+
+    return res.status(200).json({ 
+      success: true, 
+      data: notifications,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+        limit
+      }
+    });
+  } catch (error) {
+    console.error("Get Notification History Error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// ───────────────────────────────────────────────────────────────
+// Delete a notification
+// DELETE /api/v1/admin/notifications/:id
+// ───────────────────────────────────────────────────────────────
+const deleteNotification = async (req, res) => {
+  try {
+    const notification = await Notification.findByIdAndDelete(req.params.id);
+    if (!notification) {
+      return res.status(404).json({ success: false, message: "Notification not found" });
+    }
+
+    // Optional: Delete image from Cloudinary if it exists and was uploaded to our bucket
+    if (notification.imageUrl && notification.imageUrl.includes("res.cloudinary.com")) {
+      const publicId = notification.imageUrl.split("/").pop().split(".")[0];
+      const { deleteFromCloudinary } = require("../config/cloudinary");
+      await deleteFromCloudinary(`notifications/${publicId}`).catch(() => {});
+    }
+
+    return res.status(200).json({ success: true, message: "Notification deleted successfully" });
+  } catch (error) {
+    console.error("Delete Notification Error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 module.exports = {
   adminRegister,
   login,
@@ -471,4 +609,7 @@ module.exports = {
   getMe,
   updateMe,
   uploadAvatar,
+  broadcastNotification,
+  getNotificationHistory,
+  deleteNotification
 };

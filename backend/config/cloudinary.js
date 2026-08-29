@@ -109,6 +109,23 @@ const uploadToCloudinary = (fileBuffer, folder, resourceType = "auto") => {
   });
 };
 
+// ── Notification Storage ───────────────────────────────────────
+const notificationStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "notifications",
+    allowed_formats: IMAGE_FORMATS,
+    // Optional: add transformation if you want to resize banner images
+    transformation: [{ width: 800, crop: "limit", quality: "auto" }],
+  },
+});
+
+const uploadNotificationImage = multer({
+  storage: notificationStorage,
+  limits: { fileSize: 3 * 1024 * 1024 }, // 3MB limit for notification banners
+  fileFilter: imageFileFilter,
+}).single("image");
+
 // ── Delete from Cloudinary ─────────────────────────────────────
 const deleteFromCloudinary = async (publicId, resourceType = "image") => {
   if (!publicId) return;
@@ -127,6 +144,7 @@ module.exports = {
   uploadAvatarImage,
   uploadToCloudinary,
   deleteFromCloudinary,
+  uploadNotificationImage,
   IMAGE_MIMETYPES,
   IMAGE_EXT_REGEX,
 };

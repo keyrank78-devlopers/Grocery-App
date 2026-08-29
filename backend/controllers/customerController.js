@@ -403,11 +403,42 @@ const customerLogout = async (req, res) => {
   }
 };
 
+// ─── Update FCM Token ────────────────────────────────────────
+// PUT /api/v1/auth/customer/fcm-token
+const updateFcmToken = async (req, res) => {
+  try {
+    const { fcmToken } = req.body;
+    if (!fcmToken) {
+      return res.status(400).json({ success: false, message: "fcmToken is required" });
+    }
+
+    const customerId = req.customerId;
+    const customer = await Customer.findByIdAndUpdate(
+      customerId,
+      { fcmToken },
+      { new: true }
+    );
+
+    if (!customer) {
+      return res.status(404).json({ success: false, message: "Customer not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "FCM token updated successfully",
+    });
+  } catch (error) {
+    console.error("Update FCM Token Error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 module.exports = {
   sendOTP,
   verifyOTP,
   getCustomerProfile,
   updateCustomerProfile,
+  updateFcmToken,
   customerLogout,
   getAllCustomers,
   getCustomerById,

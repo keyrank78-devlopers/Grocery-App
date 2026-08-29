@@ -1,6 +1,6 @@
 const express = require("express");
 const { adminRegister, login, refreshAccessToken, logout, getMe, updateMe, uploadAvatar } = require("../controllers/adminController");
-const { sendOTP, verifyOTP, getCustomerProfile, updateCustomerProfile, customerLogout } = require("../controllers/customerController");
+const { sendOTP, verifyOTP, getCustomerProfile, updateCustomerProfile, updateFcmToken, customerLogout } = require("../controllers/customerController");
 const { verifyAdminToken, verifyStaffToken, verifyCustomerToken } = require("../middleware/auth");
 const { uploadAvatarImage } = require("../config/cloudinary");
 
@@ -192,5 +192,31 @@ router.get("/customer/me", verifyCustomerToken, getCustomerProfile);
  *         description: Unauthorized
  */
 router.put("/customer/profile", verifyCustomerToken, updateCustomerProfile);
+
+/**
+ * @swagger
+ * /auth/customer/fcm-token:
+ *   put:
+ *     summary: Update customer FCM device token for push notifications
+ *     tags: [Customer Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fcmToken:
+ *                 type: string
+ *                 example: "fkdjslaf890234u09sdjf092..."
+ *     responses:
+ *       200:
+ *         description: FCM token updated successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.put("/customer/fcm-token", verifyCustomerToken, updateFcmToken);
 
 module.exports = router;

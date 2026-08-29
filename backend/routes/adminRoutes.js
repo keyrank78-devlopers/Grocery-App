@@ -1,4 +1,5 @@
 const express = require("express");
+const { uploadNotificationImage } = require("../config/cloudinary");
 const { createStaff, getAllStaff, editStaff, toggleStaffStatus, assignWarehouseToStaff } = require("../controllers/staffController");
 const { verifyAdminToken } = require("../middleware/auth");
 const { getAllOrdersAdmin, getOrderByIdAdmin, updateOrderStatusAdmin, approveReturn, markReturned, qcCheck } = require("../controllers/orderController");
@@ -16,11 +17,20 @@ const {
   toggleCustomerStatus,
 } = require("../controllers/customerController");
 const { getDashboardAnalytics } = require("../controllers/dashboardController");
+const { broadcastNotification, getNotificationHistory, deleteNotification } = require("../controllers/adminController");
 
 const router = express.Router();
 
 // ─── Dashboard Routes ────────────────────────────────────────────────────────
 router.get("/dashboard", verifyAdminToken, getDashboardAnalytics);
+
+// ─── Notification Routes ─────────────────────────────────────────────────────
+router.post("/notifications/broadcast", verifyAdminToken, uploadNotificationImage, broadcastNotification);
+
+// ─── Notification Routes ─────────────────────────────────────────────────────
+router.post("/notifications/broadcast", verifyAdminToken, uploadNotificationImage, broadcastNotification);
+router.get("/notifications", verifyAdminToken, getNotificationHistory);
+router.delete("/notifications/:id", verifyAdminToken, deleteNotification);
 
 // ─── Customer Management Routes ──────────────────────────────────────────────
 router.get("/customers", verifyAdminToken, getAllCustomers);
