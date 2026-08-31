@@ -15,8 +15,16 @@ export default function Sidebar({ isOpen, onClose }) {
   const role = user?.role || "admin";
   const avatarLetter = user?.name ? user.name.charAt(0).toUpperCase() : "A";
 
-  // Role ke hisaab se filter + section group
-  const allowedItems = NAV_CONFIG.filter((item) => item.roles.includes(role));
+  // Role & Permissions ke hisaab se filter + section group
+  const allowedItems = NAV_CONFIG.filter((item) => {
+    if (role === "admin") return true;
+    
+    if (user?.permissions && user.permissions[item.id]) {
+      return !!user.permissions[item.id].canView;
+    }
+    
+    return item.roles.includes(role);
+  });
   const sections = allowedItems.reduce((acc, item) => {
     const existing = acc.find((s) => s.label === item.section);
     if (existing) {

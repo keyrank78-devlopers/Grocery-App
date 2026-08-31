@@ -65,6 +65,10 @@ const staffSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Warehouse",
     }],
+    permissions: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
     refreshToken: {
       type: String,
       default: null,

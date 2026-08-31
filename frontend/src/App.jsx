@@ -61,7 +61,13 @@ function AdminLayout() {
               <Route path="/" element={<Navigate to={defaultPath} replace />} />
 
               {/* Render all allowed routes */}
-              {NAV_CONFIG.filter((n) => n.roles.includes(role)).map((n) => (
+              {NAV_CONFIG.filter((n) => {
+                if (role === "admin") return true;
+                if (user?.permissions && user.permissions[n.id]) {
+                  return !!user.permissions[n.id].canView;
+                }
+                return n.roles.includes(role);
+              }).map((n) => (
                 <Route
                   key={n.path}
                   path={n.path}

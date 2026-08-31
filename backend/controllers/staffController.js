@@ -5,7 +5,7 @@ const generateCustomId = require("../utils/generateCustomId");
 // POST /api/admin/staff/create
 const createStaff = async (req, res) => {
   try {
-    const { name, email, phone, password, role, address, assignedWarehouses } = req.body;
+    const { name, email, phone, password, role, address, assignedWarehouses, permissions } = req.body;
 
     if (!name || !email || !phone || !password || !role || !address) {
       return res.status(400).json({
@@ -52,6 +52,7 @@ const createStaff = async (req, res) => {
       },
       createdBy: req.admin._id,
       assignedWarehouses: Array.isArray(assignedWarehouses) ? assignedWarehouses : (assignedWarehouses ? [assignedWarehouses] : []),
+      permissions: permissions || {},
     });
 
     return res.status(201).json({
@@ -65,6 +66,7 @@ const createStaff = async (req, res) => {
         role: newStaff.role,
         address: newStaff.address,
         assignedWarehouses: newStaff.assignedWarehouses,
+        permissions: newStaff.permissions,
         createdBy: newStaff.createdBy,
         createdAt: newStaff.createdAt,
       },
@@ -106,6 +108,7 @@ const getAllStaff = async (req, res) => {
       address: 1,
       isActive: 1,
       assignedWarehouses: 1,
+      permissions: 1,
       createdAt: 1,
     }).populate("assignedWarehouses", "name warehouse_id").lean();
 
@@ -117,6 +120,7 @@ const getAllStaff = async (req, res) => {
       role: s.role,
       city: s.address?.city || "",
       assignedWarehouses: s.assignedWarehouses ? s.assignedWarehouses.map(w => ({ id: w._id, name: w.name, warehouse_id: w.warehouse_id })) : [],
+      permissions: s.permissions || {},
       status: s.isActive === false ? "Suspended" : "Active",
       createdAt: s.createdAt,
     }));
@@ -139,7 +143,7 @@ const getAllStaff = async (req, res) => {
 const editStaff = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, phone, role, address, assignedWarehouses } = req.body;
+    const { name, email, phone, role, address, assignedWarehouses, permissions } = req.body;
 
     const member = await Staff.findOne({ staff_id: id });
     if (!member) {
@@ -151,6 +155,7 @@ const editStaff = async (req, res) => {
     if (phone) member.phone = phone.trim();
     if (role) member.role = role;
     if (assignedWarehouses !== undefined) member.assignedWarehouses = Array.isArray(assignedWarehouses) ? assignedWarehouses : (assignedWarehouses ? [assignedWarehouses] : []);
+    if (permissions) member.permissions = permissions;
 
     if (email) {
       const normalizedEmail = email.trim().toLowerCase();
@@ -183,6 +188,7 @@ const editStaff = async (req, res) => {
         mobile: member.phone,
         role: member.role,
         assignedWarehouses: member.assignedWarehouses,
+        permissions: member.permissions,
         city: member.address?.city || "",
         status: member.isActive === false ? "Suspended" : "Active",
       },

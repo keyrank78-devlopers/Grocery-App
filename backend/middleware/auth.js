@@ -204,11 +204,32 @@ const verifyStaffToken = async (req, res, next) => {
   }
 };
 
+const checkPermission = (moduleName, action) => {
+  return (req, res, next) => {
+    // Admins bypass all permission checks
+    if (req.admin && req.admin.role === "admin") {
+      return next();
+    }
+    
+    // Check staff permissions
+    const user = req.user || req.admin;
+    if (user && user.permissions && user.permissions[moduleName] && user.permissions[moduleName][action]) {
+      return next();
+    }
+    
+    return res.status(403).json({
+      success: false,
+      message: `Forbidden: You do not have permission to ${action} ${moduleName}.`,
+    });
+  };
+};
+
 module.exports = {
   verifyAdminToken,
   optionalCustomerAuth,
   resolveCartSession,
   verifyCustomerToken,
-  verifyStaffToken
+  verifyStaffToken,
+  checkPermission
 };
 

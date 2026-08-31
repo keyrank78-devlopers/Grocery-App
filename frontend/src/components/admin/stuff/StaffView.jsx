@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import CreateStuff from "./CreateStuff";
+import PermissionsMatrix from "./PermissionsMatrix";
 import { useToast } from "../../../context/ToastContext";
 import "./stuff.css";
 
@@ -59,6 +60,7 @@ function EditModal({ member, onClose, onSave }) {
     phone: member.mobile || "",
     role: member.role || "",
   });
+  const [permissions, setPermissions] = useState(member.permissions || {});
   const [isSaving, setIsSaving] = useState(false);
 
   const handleChange = (e) => {
@@ -78,6 +80,7 @@ function EditModal({ member, onClose, onSave }) {
           email: form.email.trim(),
           phone: form.phone.trim(),
           role: form.role,
+          permissions
         },
         { withCredentials: true }
       );
@@ -103,7 +106,7 @@ function EditModal({ member, onClose, onSave }) {
     >
       <div style={{
         background: "#fff", borderRadius: "12px",
-        padding: "32px", width: "100%", maxWidth: "480px",
+        padding: "32px", width: "100%", maxWidth: "800px", maxHeight: "90vh", overflowY: "auto",
         boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
@@ -133,6 +136,10 @@ function EditModal({ member, onClose, onSave }) {
               <option value="accountant">Accountant</option>
               <option value="agent">Delivery/Support Agent</option>
             </select>
+          </div>
+          
+          <div style={{ marginTop: "20px" }}>
+            <PermissionsMatrix permissions={permissions} setPermissions={setPermissions} />
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "24px" }}>

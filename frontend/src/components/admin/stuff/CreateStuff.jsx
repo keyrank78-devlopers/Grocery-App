@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useToast } from "../../../context/ToastContext";
+import PermissionsMatrix from "./PermissionsMatrix";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -22,6 +23,7 @@ export default function CreateStuff({ onCancel, onSuccess }) {
 
     const [showPassword, setShowPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [permissions, setPermissions] = useState({});
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -64,7 +66,8 @@ export default function CreateStuff({ onCancel, onSuccess }) {
                     state: form.state.trim(),
                     pincode: form.pincode.trim(),
                     landmark: form.landmark.trim()
-                }
+                },
+                permissions
             };
 
             const response = await axios.post(url, data, config);
@@ -266,6 +269,11 @@ export default function CreateStuff({ onCancel, onSuccess }) {
                             </div>
                         </div>
 
+                    </div>
+                    
+                    {/* Full Width: Permissions Matrix */}
+                    <div style={{ marginTop: "20px" }}>
+                        <PermissionsMatrix permissions={permissions} setPermissions={setPermissions} />
                     </div>
 
                     <div className="form-actions" style={{ borderTop: "1px solid var(--border-color)", paddingTop: "20px", marginTop: "20px", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
