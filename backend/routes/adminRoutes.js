@@ -55,7 +55,7 @@ router.put("/staff/:id/assign-warehouse", verifyAdminToken, assignWarehouseToSta
 
 // ─── Warehouse Management Routes ─────────────────────────────────────────────
 router.post("/warehouses", verifyAdminToken, createWarehouse);
-router.get("/get-warehouses", verifyAdminToken, getWarehouses);
+router.get("/get-warehouses", verifyStaffToken, getWarehouses);
 router.get("/single-warehouses/:id", verifyAdminToken, getWarehouseById);
 router.put("/update-warehouses/:id", verifyAdminToken, updateWarehouse);
 router.delete("/delete-warehouses/:id", verifyAdminToken, deleteWarehouse);
