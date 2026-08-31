@@ -45,8 +45,8 @@ export default function EditProduct({ product, onCancel, onSuccess }) {
     const fetchDropdowns = async () => {
       try {
         const [catRes, subRes] = await Promise.all([
-          axios.get(`${BASE_URL}/admin/get-categories`, { withCredentials: true }),
-          axios.get(`${BASE_URL}/admin/get-sub-categories`, { withCredentials: true }),
+          axios.get(`${BASE_URL}/categories`, { withCredentials: true }),
+          axios.get(`${BASE_URL}/sub-categories`, { withCredentials: true }),
         ]);
         setCategories(catRes.data.data?.filter((c) => c.isActive) || []);
         const fetchedSubs = subRes.data.data?.filter((s) => s.isActive) || [];

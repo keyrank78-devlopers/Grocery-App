@@ -17,6 +17,7 @@ const {
   toggleCustomerStatus,
 } = require("../controllers/customerController");
 const { getDashboardAnalytics } = require("../controllers/dashboardController");
+const { getInventory, updateStock } = require("../controllers/inventoryController");
 const { broadcastNotification, getNotificationHistory, deleteNotification } = require("../controllers/adminController");
 
 const router = express.Router();
@@ -59,5 +60,9 @@ router.get("/single-warehouses/:id", verifyAdminToken, getWarehouseById);
 router.put("/update-warehouses/:id", verifyAdminToken, updateWarehouse);
 router.delete("/delete-warehouses/:id", verifyAdminToken, deleteWarehouse);
 router.patch("/warehouses/:id/toggle-status", verifyAdminToken, toggleWarehouseStatus);
+
+// ─── Inventory Management Routes ─────────────────────────────────────────────
+router.get("/inventory", verifyAdminToken, getInventory);
+router.put("/inventory/update", verifyAdminToken, updateStock);
 
 module.exports = router;
