@@ -42,12 +42,7 @@ const productSchema = new mongoose.Schema(
         message: "Selling price cannot be greater than MRP",
       },
     },
-    stockQuantity: {
-      type: Number,
-      required: [true, "Stock quantity is required"],
-      min: [0, "Stock quantity cannot be negative"],
-      default: 0,
-    },
+
     gstRate: {
       type: Number,
       default: 0,

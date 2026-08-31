@@ -4,6 +4,7 @@ const Category = require("../models/Category");
 const SubCategory = require("../models/SubCategory");
 const { uploadToCloudinary, deleteFromCloudinary } = require("../config/cloudinary");
 const generateCustomId = require("../utils/generateCustomId");
+const WarehouseStock = require("../models/WarehouseStock");
 
 // ───────────────────────────────────────────────────────────────
 // Create Product
@@ -222,6 +223,21 @@ const getAllProducts = async (req, res) => {
     if (status === "active") filter.isActive = true;
     else if (status === "inactive") filter.isActive = false;
 
+    const warehouseId = req.headers["x-warehouse-id"];
+    let productStockMap = {};
+
+    if (warehouseId) {
+      // Find products available in the specified warehouse
+      const stocks = await WarehouseStock.find({ warehouse: warehouseId }).lean();
+      const productIds = stocks.map((s) => s.product);
+      filter._id = { $in: productIds };
+      
+      // Create a map to quickly attach stock to the products
+      stocks.forEach(stock => {
+        productStockMap[stock.product.toString()] = stock.quantity;
+      });
+    }
+
     // Query both total counts and paginated products in parallel.
     // Category and SubCategory are loaded in bulk using Mongoose population to prevent N+1 Queries.
     const [products, total] = await Promise.all([
@@ -235,9 +251,18 @@ const getAllProducts = async (req, res) => {
       Product.countDocuments(filter),
     ]);
 
+    // Map local stock if warehouse is provided
+    const formattedProducts = products.map((product) => {
+      const localStock = productStockMap[product._id.toString()];
+      return {
+        ...product,
+        localStockQuantity: localStock !== undefined ? localStock : null,
+      };
+    });
+
     return res.status(200).json({
       success: true,
-      data: products,
+      data: formattedProducts,
       pagination: {
         total,
         page: pageNum,
@@ -284,6 +309,15 @@ const getProductById = async (req, res) => {
       .lean();
 
     product.recentReviews = recentReviews;
+
+    const warehouseId = req.headers["x-warehouse-id"];
+    if (warehouseId) {
+      const stockInfo = await WarehouseStock.findOne({ product: product._id, warehouse: warehouseId }).lean();
+      product.localStockQuantity = stockInfo ? stockInfo.quantity : 0;
+    } else {
+      // Global fallback if requested by admin or without header
+      product.localStockQuantity = null;
+    }
 
     return res.status(200).json({
       success: true,
@@ -653,7 +687,6 @@ const getSearchSuggestions = async (req, res) => {
       sellPrice: p.sellPrice,
       mrp: p.mrp,
       unit: p.unit,
-      stockQuantity: p.stockQuantity,
       image: p.image?.url || "",
     }));
 

@@ -353,7 +353,6 @@ export default function ProductsView() {
               <th>Category</th>
               <th>MRP (₹)</th>
               <th>Sell Price (₹)</th>
-              <th>Stock</th>
               <th>Status</th>
               <th className="text-right">Actions</th>
             </tr>
@@ -398,11 +397,6 @@ export default function ProductsView() {
                   </td>
                   <td>₹{parseFloat(p.mrp || 0).toFixed(2)}</td>
                   <td>₹{parseFloat(p.sellPrice || 0).toFixed(2)}</td>
-                  <td>
-                    <span className={`badge ${p.stockQuantity > 0 ? "badge-success" : "badge-error"}`}>
-                      {p.stockQuantity > 0 ? `${p.stockQuantity} units` : "Out of Stock"}
-                    </span>
-                  </td>
                   <td>
                     <span className={`badge ${p.isActive ? "badge-success" : "badge-error"}`}>
                       {p.isActive ? "Active" : "Inactive"}

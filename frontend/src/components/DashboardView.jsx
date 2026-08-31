@@ -1,6 +1,8 @@
-import React from "react";
-import { MOCK_STATS, MOCK_ACTIVITY_LOGS } from "../mockData";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
 
 const STAT_ICONS = [
   { class: "indigo", icon: (
@@ -21,9 +23,39 @@ export default function DashboardView() {
   const { user } = useAuth();
   const firstName = user?.name?.split(" ")[0] || "Admin";
 
+  const [stats, setStats] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`${BASE_URL}/admin/dashboard`);
+      const { systemStats, warehouseAnalytics } = res.data.data;
+      
+      setStats([
+        { label: "TOTAL SALES (INR)", value: `₹${systemStats.totalRevenue.toLocaleString()}`, trend: "Lifetime Revenue", type: "positive" },
+        { label: "TOTAL ORDERS", value: systemStats.totalOrders.toLocaleString(), trend: "Placed orders", type: "neutral" },
+        { label: "RETURN REQUESTS", value: systemStats.totalReturns.toLocaleString(), trend: "Needs processing", type: "warning" },
+        { label: "TOTAL CUSTOMERS", value: systemStats.totalCustomers.toLocaleString(), trend: "Registered users", type: "positive" }
+      ]);
+      setWarehouses(warehouseAnalytics);
+    } catch (error) {
+      console.error("Failed to fetch dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const today = new Date();
   const dayStr = today.toLocaleDateString("en-IN", { weekday: "long" });
   const dateStr = today.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+
+  if (loading) return <div>Loading dashboard...</div>;
 
   return (
     <div className="content-section active">
@@ -39,7 +71,7 @@ export default function DashboardView() {
       </div>
 
       <div className="stats-grid">
-        {MOCK_STATS.map((stat, idx) => (
+        {stats.map((stat, idx) => (
           <div key={idx} className="stats-card">
             <div className="stats-card-top">
               <div>
@@ -62,33 +94,37 @@ export default function DashboardView() {
       <div className="dashboard-grid">
         <div className="card table-card">
           <div className="card-header">
-            <h3>Recent System Activity</h3>
+            <h3>Warehouse Analytics</h3>
             <span className="badge badge-success">Live</span>
           </div>
           <table className="data-table">
             <thead>
               <tr>
-                <th>Time</th>
-                <th>Module</th>
-                <th>Action Details</th>
-                <th>Operator</th>
+                <th>Warehouse Name</th>
+                <th>Staff</th>
+                <th>Total Orders</th>
+                <th>Pending</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              {MOCK_ACTIVITY_LOGS.map((log, idx) => (
-                <tr key={idx}>
-                  <td><span className="activity-time">{log.time}</span></td>
-                  <td><span className="activity-module">{log.module}</span></td>
-                  <td>{log.action}</td>
-                  <td>{log.operator}</td>
+              {warehouses.length > 0 ? warehouses.map((wh) => (
+                <tr key={wh.id}>
+                  <td><strong>{wh.name}</strong></td>
+                  <td>{wh.staffAllocated} (M: {wh.managersCount}, A: {wh.agentsCount})</td>
+                  <td>{wh.ordersHandled}</td>
+                  <td><span className="text-danger">{wh.pendingOrders}</span></td>
                   <td>
-                    <span className={`badge ${log.badge === 'success' ? 'badge-success' : 'badge-error'}`}>
-                      {log.status}
+                    <span className={`badge ${wh.status === 'Active' ? 'badge-success' : 'badge-error'}`}>
+                      {wh.status || "Active"}
                     </span>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan="5" className="text-center">No warehouse data available</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -113,27 +149,6 @@ export default function DashboardView() {
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 Add Staff
               </button>
-            </div>
-          </div>
-
-          <div className="card" style={{ padding: "20px" }}>
-            <h4 style={{ fontSize: "13px", fontWeight: 700, marginBottom: "4px" }}>Today's Summary</h4>
-            <p className="text-muted text-sm" style={{ marginBottom: "16px" }}>Store performance overview</p>
-            <div className="summary-stat-row">
-              <span className="summary-stat-label">Orders Today</span>
-              <span className="summary-stat-value">48</span>
-            </div>
-            <div className="summary-stat-row">
-              <span className="summary-stat-label">Revenue Today</span>
-              <span className="summary-stat-value">₹24,680</span>
-            </div>
-            <div className="summary-stat-row">
-              <span className="summary-stat-label">Low Stock Items</span>
-              <span className="summary-stat-value text-danger">7</span>
-            </div>
-            <div className="summary-stat-row">
-              <span className="summary-stat-label">Active Staff</span>
-              <span className="summary-stat-value">11</span>
             </div>
           </div>
         </div>

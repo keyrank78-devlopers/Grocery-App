@@ -14,7 +14,6 @@ export default function EditProduct({ product, onCancel, onSuccess }) {
     subCategory: product.subCategory?._id || product.subCategory || "",
     mrp: product.mrp !== undefined ? product.mrp : "",
     sellPrice: product.sellPrice !== undefined ? product.sellPrice : "",
-    stockQuantity: product.stockQuantity !== undefined ? product.stockQuantity : "",
     gstRate: product.gstRate !== undefined ? product.gstRate : "",
   });
 
@@ -143,7 +142,6 @@ export default function EditProduct({ product, onCancel, onSuccess }) {
       formData.append("subCategory", form.subCategory);
       formData.append("mrp", form.mrp);
       formData.append("sellPrice", form.sellPrice);
-      formData.append("stockQuantity", form.stockQuantity);
       formData.append("gstRate", form.gstRate !== "" ? form.gstRate : "0");
 
       if (mainImage) {
@@ -264,14 +262,7 @@ export default function EditProduct({ product, onCancel, onSuccess }) {
             </div>
 
             <div className="row">
-              <div className="col-6">
-                <div className="form-group">
-                  <label>Stock Quantity <span className="text-danger">*</span></label>
-                  <input type="number" name="stockQuantity" value={form.stockQuantity} onChange={handleChange} min="0" required />
-                </div>
-              </div>
-
-              <div className="col-6">
+              <div className="col-12">
                 <div className="form-group">
                   <label>GST Rate (%)</label>
                   <input type="number" name="gstRate" value={form.gstRate} onChange={handleChange} min="0" max="100" step="0.01" />

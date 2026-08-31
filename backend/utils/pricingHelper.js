@@ -1,14 +1,15 @@
 const Product = require("../models/Product");
 const Coupon = require("../models/Coupon");
+const WarehouseStock = require("../models/WarehouseStock");
 
 /**
  * Calculates pricing details for the cart items including subtotal, coupon discount, and GST.
  * 
  * @param {Object} cart - Cart document with items populated
- * @param {string} [couponCode] - Optional coupon code to apply
+ * @param {string} [assignedWarehouseId] - Optional warehouse ID for stock validation
  * @returns {Promise<Object>} Pricing details and breakdown
  */
-const calculatePricing = async (cart, couponCode) => {
+const calculatePricing = async (cart, couponCode, assignedWarehouseId) => {
   if (!cart || !cart.items || cart.items.length === 0) {
     return {
       success: true,
@@ -48,11 +49,15 @@ const calculatePricing = async (cart, couponCode) => {
       };
     }
 
-    if (product.stockQuantity < item.quantity) {
-      return {
-        success: false,
-        message: `Insufficient stock for product: "${product.name}". Available stock: ${product.stockQuantity}, requested: ${item.quantity}`,
-      };
+    if (assignedWarehouseId) {
+      const stockInfo = await WarehouseStock.findOne({ product: productId, warehouse: assignedWarehouseId }).lean();
+      const availableStock = stockInfo ? stockInfo.quantity : 0;
+      if (availableStock < item.quantity) {
+        return {
+          success: false,
+          message: `Insufficient stock for product: "${product.name}". Available stock: ${availableStock}, requested: ${item.quantity}`,
+        };
+      }
     }
 
     const baseSubtotal = product.sellPrice * item.quantity;

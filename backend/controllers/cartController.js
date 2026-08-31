@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
+const WarehouseStock = require("../models/WarehouseStock");
 
 
 
@@ -59,15 +60,35 @@ const addToCart = async (req, res) => {
       });
     }
 
-    const cart = await findOrCreateCart(session);
+    const warehouseId = req.headers["x-warehouse-id"];
+    if (!warehouseId) {
+      return res.status(400).json({
+        success: false,
+        message: "Warehouse ID is missing. Please set delivery location.",
+      });
+    }
 
-    // Check if item already exists in cart
+    const cart = await findOrCreateCart(session);
+    
+    // Check if item already exists in cart to calculate total requested quantity
     const existingItem = cart.items.find(
       (item) => item.product.toString() === productId.toString()
     );
+    const totalRequestedQty = existingItem ? existingItem.quantity + qty : qty;
+
+    // Validate against WarehouseStock
+    const stockInfo = await WarehouseStock.findOne({ product: productId, warehouse: warehouseId }).lean();
+    const availableStock = stockInfo ? stockInfo.quantity : 0;
+
+    if (totalRequestedQty > availableStock) {
+      return res.status(400).json({
+        success: false,
+        message: `Only ${availableStock} units available in stock at your location`,
+      });
+    }
 
     if (existingItem) {
-      existingItem.quantity += qty;
+      existingItem.quantity = totalRequestedQty;
     } else {
       cart.items.push({ product: productId, quantity: qty });
     }
@@ -116,11 +137,33 @@ const increaseQuantity = async (req, res) => {
       });
     }
 
+    const warehouseId = req.headers["x-warehouse-id"];
+    if (!warehouseId) {
+      return res.status(400).json({
+        success: false,
+        message: "Warehouse ID is missing. Please set delivery location.",
+      });
+    }
+
     const cart = await findOrCreateCart(session);
 
     const existingItem = cart.items.find(
       (item) => item.product.toString() === productId.toString()
     );
+
+    const currentQty = existingItem ? existingItem.quantity : 0;
+    const totalRequestedQty = currentQty + 1;
+
+    // Validate against WarehouseStock
+    const stockInfo = await WarehouseStock.findOne({ product: productId, warehouse: warehouseId }).lean();
+    const availableStock = stockInfo ? stockInfo.quantity : 0;
+
+    if (totalRequestedQty > availableStock) {
+      return res.status(400).json({
+        success: false,
+        message: `Only ${availableStock} units available in stock at your location`,
+      });
+    }
 
     if (existingItem) {
       existingItem.quantity += 1;

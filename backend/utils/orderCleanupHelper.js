@@ -1,5 +1,5 @@
 const Order = require("../models/Order");
-const Product = require("../models/Product");
+const WarehouseStock = require("../models/WarehouseStock");
 
 /**
  * Starts a background scheduler (using setInterval) that runs every 5 minutes
@@ -26,10 +26,12 @@ const startPendingOrderCleanup = () => {
         for (const order of expiredOrders) {
           // Revert stock for each item in the expired order
           for (const item of order.items) {
-            await Product.findByIdAndUpdate(
-              item.product,
-              { $inc: { stockQuantity: item.quantity } }
-            );
+            if (order.assignedWarehouse) {
+              await WarehouseStock.findOneAndUpdate(
+                { product: item.product, warehouse: order.assignedWarehouse },
+                { $inc: { quantity: item.quantity } }
+              );
+            }
           }
 
           // Cancel the order

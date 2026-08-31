@@ -106,3 +106,16 @@ TypeError: Cannot set property query of #<IncomingMessage> which has only a gett
 [2026-08-29 13:14:45] HTTP: [0mGET /api-docs/swagger-ui-init.js [32m200[0m 1.001 ms - -[0m
 [2026-08-29 13:14:45] HTTP: [0mGET /api-docs/favicon-32x32.png [36m304[0m 2.523 ms - -[0m
 [2026-08-29 13:15:13] WARN: SIGINT received. Shutting down gracefully...
+[2026-08-31 11:11:04] INFO: Server running on port 5000 in development mode
+[2026-08-31 11:11:04] WARN: SIGINT received. Shutting down gracefully...
+[2026-08-31 11:11:19] INFO: Server running on port 5000 in development mode
+[2026-08-31 11:41:42] INFO: Server running on port 5000 in development mode
+[2026-08-31 11:41:53] INFO: Server running on port 5000 in development mode
+[2026-08-31 11:42:41] INFO: Server running on port 5000 in development mode
+[2026-08-31 11:43:11] INFO: Server running on port 5000 in development mode
+[2026-08-31 11:43:39] INFO: Server running on port 5000 in development mode
+[2026-08-31 11:44:06] INFO: Server running on port 5000 in development mode
+[2026-08-31 11:44:38] INFO: Server running on port 5000 in development mode
+[2026-08-31 11:44:48] INFO: Server running on port 5000 in development mode
+[2026-08-31 11:45:03] INFO: Server running on port 5000 in development mode
+[2026-08-31 11:52:21] WARN: SIGINT received. Shutting down gracefully...

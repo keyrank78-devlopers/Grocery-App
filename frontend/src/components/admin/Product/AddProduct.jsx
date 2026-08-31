@@ -11,7 +11,6 @@ const INITIAL_FORM = {
   subCategory: "",
   mrp: "",
   sellPrice: "",
-  stockQuantity: "",
   gstRate: "",
 };
 
@@ -134,7 +133,6 @@ export default function AddProduct({ onCancel, onSuccess }) {
       formData.append("subCategory", form.subCategory);
       formData.append("mrp", form.mrp);
       formData.append("sellPrice", form.sellPrice);
-      formData.append("stockQuantity", form.stockQuantity);
       formData.append("gstRate", form.gstRate || "0");
       formData.append("image", mainImage);
       otherImages.forEach((img) => formData.append("images", img));
@@ -253,15 +251,7 @@ export default function AddProduct({ onCancel, onSuccess }) {
             </div>
 
             <div className="row">
-              <div className="col-6">
-                <div className="form-group">
-                  <label>Stock Quantity <span className="text-danger">*</span></label>
-                  <input type="number" name="stockQuantity" value={form.stockQuantity} onChange={handleChange}
-                    placeholder="e.g. 150" min="0" required />
-                </div>
-              </div>
-
-              <div className="col-6">
+              <div className="col-12">
                 <div className="form-group">
                   <label>GST Rate (%)</label>
                   <input type="number" name="gstRate" value={form.gstRate} onChange={handleChange}

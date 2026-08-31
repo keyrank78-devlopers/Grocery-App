@@ -3,6 +3,7 @@ const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 const Address = require("../models/Address");
 const Customer = require("../models/Customer");
+const WarehouseStock = require("../models/WarehouseStock");
 const generateCustomId = require("../utils/generateCustomId");
 const { calculatePricing } = require("../utils/pricingHelper");
 const crypto = require("crypto");
@@ -62,10 +63,12 @@ const checkout = async (req, res) => {
       
       // Revert stock
       for (const item of previousPendingOrder.items) {
-        await Product.findByIdAndUpdate(
-          item.product,
-          { $inc: { stockQuantity: item.quantity } }
-        );
+        if (previousPendingOrder.assignedWarehouse) {
+          await WarehouseStock.findOneAndUpdate(
+            { product: item.product, warehouse: previousPendingOrder.assignedWarehouse },
+            { $inc: { quantity: item.quantity } }
+          );
+        }
       }
       
       // Update order status to Cancelled
@@ -154,7 +157,7 @@ const checkout = async (req, res) => {
     const assignedWarehouseId = nearestWarehouses[0]._id;
 
     // 4. Verify Stock and calculate pricing details
-    const pricingResult = await calculatePricing(cart, couponCode);
+    const pricingResult = await calculatePricing(cart, couponCode, assignedWarehouseId);
     if (!pricingResult.success) {
       return res.status(400).json({
         success: false,
@@ -202,9 +205,9 @@ const checkout = async (req, res) => {
 
     // 8. Decrement stock for products (Stock Lock/Reservation)
     for (const item of cart.items) {
-      await Product.findByIdAndUpdate(
-        item.product,
-        { $inc: { stockQuantity: -item.quantity } }
+      await WarehouseStock.findOneAndUpdate(
+        { product: item.product, warehouse: assignedWarehouseId },
+        { $inc: { quantity: -item.quantity } }
       );
     }
 
@@ -294,9 +297,9 @@ const checkout = async (req, res) => {
         
         // Revert stock decrement if Razorpay creation fails
         for (const item of cart.items) {
-          await Product.findByIdAndUpdate(
-            item.product,
-            { $inc: { stockQuantity: item.quantity } }
+          await WarehouseStock.findOneAndUpdate(
+            { product: item.product, warehouse: assignedWarehouseId },
+            { $inc: { quantity: item.quantity } }
           );
         }
         
