@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useToast } from "../../../context/ToastContext";
+import { useAuth } from "../../../context/AuthContext";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -15,6 +16,10 @@ const STATUS_TIMELINE = [
 
 export default function OrderDetailView({ order, onCancel, onUpdateSuccess }) {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  
+  const isAdmin = user?.role === "admin";
+  const canEdit = isAdmin || !!user?.permissions?.orders?.canEdit;
 
   const [orderStatus, setOrderStatus] = useState(order.orderStatus || "Pending");
   const [paymentStatus, setPaymentStatus] = useState(order.paymentInfo?.status || "Pending");
@@ -382,54 +387,56 @@ export default function OrderDetailView({ order, onCancel, onUpdateSuccess }) {
         {/* Right Side: Operational controls, Address, Invoice totals */}
         <div>
           {/* Operations: Update Status Panel */}
-          <div className="order-card operation-card">
-            <h3>Admin Actions</h3>
-            
-            <div className="form-group" style={{ marginBottom: "16px" }}>
-              <label style={{ fontWeight: "600" }}>Change Order Status</label>
-              <select
-                value={orderStatus}
-                onChange={(e) => setOrderStatus(e.target.value)}
-                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", backgroundColor: "#fff" }}
-              >
-                <option value="Pending">Pending</option>
-                <option value="Placed">Placed</option>
-                <option value="Accepted">Accepted</option>
-                <option value="Processing">Processing</option>
-                <option value="Out for Delivery">Out for Delivery</option>
-                <option value="Delivered">Delivered</option>
-                <option value="Cancelled">Cancelled</option>
-                <option value="Return Requested">Return Requested</option>
-                <option value="Return Approved">Return Approved</option>
-                <option value="Returned">Returned</option>
-                <option value="QC Failed">QC Failed</option>
-                <option value="Refunded">Refunded</option>
-              </select>
-            </div>
+          {canEdit && (
+            <div className="order-card operation-card">
+              <h3>Admin Actions</h3>
+              
+              <div className="form-group" style={{ marginBottom: "16px" }}>
+                <label style={{ fontWeight: "600" }}>Change Order Status</label>
+                <select
+                  value={orderStatus}
+                  onChange={(e) => setOrderStatus(e.target.value)}
+                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", backgroundColor: "#fff" }}
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Placed">Placed</option>
+                  <option value="Accepted">Accepted</option>
+                  <option value="Processing">Processing</option>
+                  <option value="Out for Delivery">Out for Delivery</option>
+                  <option value="Delivered">Delivered</option>
+                  <option value="Cancelled">Cancelled</option>
+                  <option value="Return Requested">Return Requested</option>
+                  <option value="Return Approved">Return Approved</option>
+                  <option value="Returned">Returned</option>
+                  <option value="QC Failed">QC Failed</option>
+                  <option value="Refunded">Refunded</option>
+                </select>
+              </div>
 
-            <div className="form-group" style={{ marginBottom: "20px" }}>
-              <label style={{ fontWeight: "600" }}>Change Payment Status</label>
-              <select
-                value={paymentStatus}
-                onChange={(e) => setPaymentStatus(e.target.value)}
-                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", backgroundColor: "#fff" }}
-              >
-                <option value="Pending">Pending</option>
-                <option value="Paid">Paid</option>
-                <option value="Failed">Failed</option>
-              </select>
-            </div>
+              <div className="form-group" style={{ marginBottom: "20px" }}>
+                <label style={{ fontWeight: "600" }}>Change Payment Status</label>
+                <select
+                  value={paymentStatus}
+                  onChange={(e) => setPaymentStatus(e.target.value)}
+                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", backgroundColor: "#fff" }}
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Paid">Paid</option>
+                  <option value="Failed">Failed</option>
+                </select>
+              </div>
 
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleUpdate}
-              disabled={isUpdating}
-              style={{ width: "100%", padding: "12px", borderRadius: "8px" }}
-            >
-              {isUpdating ? "Updating..." : "Save Status Changes"}
-            </button>
-          </div>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleUpdate}
+                disabled={isUpdating}
+                style={{ width: "100%", padding: "12px", borderRadius: "8px" }}
+              >
+                {isUpdating ? "Updating..." : "Save Status Changes"}
+              </button>
+            </div>
+          )}
 
           {/* Shipping Address */}
           <div className="order-card addr-info">

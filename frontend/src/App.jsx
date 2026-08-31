@@ -63,8 +63,8 @@ function AdminLayout() {
               {/* Render all allowed routes */}
               {NAV_CONFIG.filter((n) => {
                 if (role === "admin") return true;
-                if (user?.permissions && user.permissions[n.id]) {
-                  return !!user.permissions[n.id].canView;
+                if (user?.permissions) {
+                  return !!user.permissions[n.id]?.canView;
                 }
                 return n.roles.includes(role);
               }).map((n) => (

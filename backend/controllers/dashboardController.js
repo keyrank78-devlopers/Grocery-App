@@ -139,6 +139,121 @@ const getDashboardAnalytics = async (req, res) => {
   }
 };
 
+// ───────────────────────────────────────────────────────────────
+// Get Revenue Analytics
+// GET /api/v1/admin/revenue
+// ───────────────────────────────────────────────────────────────
+const getRevenueAnalytics = async (req, res) => {
+  try {
+    const { startDate, endDate, warehouseId } = req.query;
+
+    const matchStage = {
+      orderStatus: "Delivered",
+      "paymentInfo.status": "Paid",
+    };
+
+    if (startDate && endDate) {
+      matchStage.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
+      };
+    }
+
+    const restrictedRoles = ["warehouse_manager", "agent"];
+    const user = req.admin || req.user;
+    
+    if (user && restrictedRoles.includes(user.role)) {
+      const assignedIds = user.assignedWarehouses ? user.assignedWarehouses.map(w => new mongoose.Types.ObjectId(w._id ? w._id.toString() : w.toString())) : [];
+      if (warehouseId && assignedIds.some(id => id.toString() === warehouseId)) {
+        matchStage.assignedWarehouse = new mongoose.Types.ObjectId(warehouseId);
+      } else {
+        matchStage.assignedWarehouse = { $in: assignedIds };
+      }
+    } else {
+      if (warehouseId) {
+        matchStage.assignedWarehouse = new mongoose.Types.ObjectId(warehouseId);
+      }
+    }
+
+    // 1. Total Revenue and Payment Method Split
+    const summaryAgg = await Order.aggregate([
+      { $match: matchStage },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$pricing.totalPrice" },
+          totalOrders: { $sum: 1 },
+          codRevenue: {
+            $sum: { $cond: [{ $eq: ["$paymentInfo.method", "COD"] }, "$pricing.totalPrice", 0] }
+          },
+          onlineRevenue: {
+            $sum: { $cond: [{ $eq: ["$paymentInfo.method", "Online"] }, "$pricing.totalPrice", 0] }
+          },
+          walletRevenue: {
+            $sum: { $cond: [{ $eq: ["$paymentInfo.method", "Wallet"] }, "$pricing.totalPrice", 0] }
+          }
+        }
+      }
+    ]);
+
+    // 2. Daily Timeline
+    const timelineAgg = await Order.aggregate([
+      { $match: matchStage },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "+05:30" } },
+          revenue: { $sum: "$pricing.totalPrice" },
+          orders: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // 3. Top Products
+    const topProductsAgg = await Order.aggregate([
+      { $match: matchStage },
+      { $unwind: "$items" },
+      {
+        $group: {
+          _id: "$items.product",
+          name: { $first: "$items.name" },
+          totalSold: { $sum: "$items.quantity" },
+          revenueGenerated: { $sum: { $multiply: ["$items.sellPrice", "$items.quantity"] } }
+        }
+      },
+      { $sort: { revenueGenerated: -1 } },
+      { $limit: 10 }
+    ]);
+
+    const summary = summaryAgg[0] || {
+      totalRevenue: 0,
+      totalOrders: 0,
+      codRevenue: 0,
+      onlineRevenue: 0,
+      walletRevenue: 0
+    };
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        summary,
+        timeline: timelineAgg.map(t => ({ date: t._id, revenue: t.revenue, orders: t.orders })),
+        topProducts: topProductsAgg.map(p => ({
+          productId: p._id,
+          name: p.name,
+          totalSold: p.totalSold,
+          revenueGenerated: p.revenueGenerated
+        }))
+      }
+    });
+
+  } catch (error) {
+    console.error("Get Revenue Analytics Error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 module.exports = {
   getDashboardAnalytics,
+  getRevenueAnalytics,
 };

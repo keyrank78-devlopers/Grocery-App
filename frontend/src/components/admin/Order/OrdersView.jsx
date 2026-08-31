@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import OrderDetailView from "./OrderDetailView";
+import { useAuth } from "../../../context/AuthContext";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -23,7 +24,10 @@ const PAYMENT_STATUSES = ["Pending", "Paid", "Failed"];
 const PAYMENT_METHODS = ["COD", "Online", "Wallet"];
 
 export default function OrdersView() {
+  const { user } = useAuth();
+  
   const [orders, setOrders] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
@@ -33,10 +37,36 @@ export default function OrdersView() {
   const [orderStatusFilter, setOrderStatusFilter] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("");
+  const [warehouseFilter, setWarehouseFilter] = useState("");
 
   // ── Pagination State ───────────────────────────────────────────
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  // Fetch warehouses
+  useEffect(() => {
+    const fetchWarehouses = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/admin/get-warehouses`, { withCredentials: true });
+        let allWarehouses = res.data.data?.filter(w => w.isActive) || [];
+
+        // Restrict for Managers/Agents
+        if (user && ["warehouse_manager", "agent"].includes(user.role)) {
+          const assignedIds = user.assignedWarehouses?.map(w => typeof w === 'object' ? w.id || w._id : w) || [];
+          allWarehouses = allWarehouses.filter(w => assignedIds.includes(w._id) || assignedIds.includes(w.warehouse_id));
+          
+          if (allWarehouses.length === 1) {
+            setWarehouseFilter(allWarehouses[0]._id);
+          }
+        }
+        
+        setWarehouses(allWarehouses);
+      } catch (err) {
+        console.error("Fetch Warehouses Error:", err);
+      }
+    };
+    fetchWarehouses();
+  }, [user]);
 
   // Debounce search string (500ms delay)
   useEffect(() => {
@@ -58,6 +88,7 @@ export default function OrdersView() {
         orderStatus: orderStatusFilter,
         paymentStatus: paymentStatusFilter,
         paymentMethod: paymentMethodFilter,
+        warehouseId: warehouseFilter,
       };
 
       const res = await axios.get(`${BASE_URL}/admin/orders`, {
@@ -76,7 +107,7 @@ export default function OrdersView() {
 
   useEffect(() => {
     fetchOrders();
-  }, [debouncedSearch, orderStatusFilter, paymentStatusFilter, paymentMethodFilter, page]);
+  }, [debouncedSearch, orderStatusFilter, paymentStatusFilter, paymentMethodFilter, warehouseFilter, page]);
 
   // Detail View Page Toggle
   if (selectedOrder) {
@@ -182,8 +213,26 @@ export default function OrdersView() {
           </select>
         </div>
 
+        {/* Warehouse Filter */}
+        {(!user || !["warehouse_manager", "agent"].includes(user.role) || warehouses.length > 1) && (
+          <div style={{ minWidth: "160px" }}>
+            <select
+              value={warehouseFilter}
+              onChange={(e) => { setWarehouseFilter(e.target.value); setPage(1); }}
+              style={{ width: "100%", cursor: "pointer" }}
+            >
+              {(!user || !["warehouse_manager", "agent"].includes(user.role)) && (
+                <option value="">All Warehouses</option>
+              )}
+              {warehouses.map(w => (
+                <option key={w._id} value={w._id}>{w.name} ({w.warehouse_id})</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Clear Filters */}
-        {(searchTerm || orderStatusFilter || paymentStatusFilter || paymentMethodFilter) && (
+        {(searchTerm || orderStatusFilter || paymentStatusFilter || paymentMethodFilter || warehouseFilter) && (
           <button
             type="button"
             className="btn btn-outline"
@@ -192,6 +241,7 @@ export default function OrdersView() {
               setOrderStatusFilter("");
               setPaymentStatusFilter("");
               setPaymentMethodFilter("");
+              setWarehouseFilter("");
               setPage(1);
             }}
             style={{ padding: "9px 18px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}
@@ -217,6 +267,7 @@ export default function OrdersView() {
               <th>Order ID</th>
               <th>Date / Time</th>
               <th>Customer</th>
+              <th>Warehouse</th>
               <th>Items Summary</th>
               <th>Total Price (₹)</th>
               <th>Payment Method</th>
@@ -227,7 +278,7 @@ export default function OrdersView() {
           <tbody>
             {orders.length === 0 ? (
               <tr>
-                <td colSpan={9} style={{ textAlign: "center", padding: "48px", color: "#6c757d" }}>
+                <td colSpan={10} style={{ textAlign: "center", padding: "48px", color: "#6c757d" }}>
                   No orders found matching the filter criteria.
                 </td>
               </tr>
@@ -251,6 +302,16 @@ export default function OrdersView() {
                     <td>
                       <strong>{order.shippingAddress?.name || "—"}</strong> <br />
                       <small className="text-muted">{order.shippingAddress?.mobile || ""}</small>
+                    </td>
+                    <td>
+                      {order.assignedWarehouse ? (
+                        <>
+                          <span style={{ display: "block", fontSize: "13px", fontWeight: "500" }}>{order.assignedWarehouse.name}</span>
+                          <span className="text-muted text-sm">{order.assignedWarehouse.warehouse_id}</span>
+                        </>
+                      ) : (
+                        <span className="text-muted text-sm">Unassigned</span>
+                      )}
                     </td>
                     <td>
                       <span className="text-muted text-sm" style={{ display: "block", maxWidth: "240px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={order.items.map(i => `${i.name} x${i.quantity}`).join(", ")}>

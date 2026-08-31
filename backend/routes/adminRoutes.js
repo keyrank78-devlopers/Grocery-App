@@ -16,7 +16,7 @@ const {
   getCustomerById,
   toggleCustomerStatus,
 } = require("../controllers/customerController");
-const { getDashboardAnalytics } = require("../controllers/dashboardController");
+const { getDashboardAnalytics, getRevenueAnalytics } = require("../controllers/dashboardController");
 const { getInventory, updateStock } = require("../controllers/inventoryController");
 const { broadcastNotification, getNotificationHistory, deleteNotification } = require("../controllers/adminController");
 
@@ -24,6 +24,7 @@ const router = express.Router();
 
 // ─── Dashboard Routes ────────────────────────────────────────────────────────
 router.get("/dashboard", verifyStaffToken, checkPermission("dashboard", "canView"), getDashboardAnalytics);
+router.get("/revenue", verifyStaffToken, checkPermission("dashboard", "canView"), getRevenueAnalytics);
 
 // ─── Notification Routes ─────────────────────────────────────────────────────
 router.post("/notifications/broadcast", verifyAdminToken, uploadNotificationImage, broadcastNotification);
@@ -55,7 +56,7 @@ router.put("/staff/:id/assign-warehouse", verifyStaffToken, checkPermission("sta
 
 // ─── Warehouse Management Routes ─────────────────────────────────────────────
 router.post("/warehouses", verifyStaffToken, checkPermission("warehouses", "canEdit"), createWarehouse);
-router.get("/get-warehouses", verifyStaffToken, checkPermission("warehouses", "canView"), getWarehouses);
+router.get("/get-warehouses", verifyStaffToken, getWarehouses);
 router.get("/single-warehouses/:id", verifyStaffToken, checkPermission("warehouses", "canView"), getWarehouseById);
 router.put("/update-warehouses/:id", verifyStaffToken, checkPermission("warehouses", "canEdit"), updateWarehouse);
 router.delete("/delete-warehouses/:id", verifyStaffToken, checkPermission("warehouses", "canDelete"), deleteWarehouse);

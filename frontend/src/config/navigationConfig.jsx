@@ -2,6 +2,7 @@ import { lazy } from "react";
 
 // ─── Lazy load views ──────────────────────────────────────────────────────────
 const DashboardView     = lazy(() => import("../components/DashboardView"));
+const RevenueView       = lazy(() => import("../components/admin/Dashboard/RevenueView"));
 const CategoriesView    = lazy(() => import("../components/admin/Category/CategoriesView"));
 const SubcategoriesView = lazy(() => import("../components/admin/SubCategory/SubCategoriesView"));
 const ProductsView      = lazy(() => import("../components/admin/Product/ProductsView"));
@@ -24,6 +25,11 @@ const Icons = {
   dashboard: (
     <svg className="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
+    </svg>
+  ),
+  revenue: (
+    <svg className="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
     </svg>
   ),
   categories: (
@@ -120,6 +126,16 @@ export const NAV_CONFIG = [
     component: DashboardView,
     roles: ["admin", "sub_admin", "accountant", "warehouse_manager", "agent"],
     defaultFor: ["admin", "sub_admin", "accountant", "warehouse_manager", "agent"],
+  },
+  {
+    id: "revenue",
+    path: "/revenue",
+    label: "Revenue Analytics",
+    section: "Overview",
+    icon: Icons.revenue,
+    component: RevenueView,
+    roles: ["admin", "sub_admin", "accountant"],
+    defaultFor: [],
   },
   {
     id: "categories",

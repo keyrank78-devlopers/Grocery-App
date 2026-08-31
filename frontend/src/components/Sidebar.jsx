@@ -19,8 +19,8 @@ export default function Sidebar({ isOpen, onClose }) {
   const allowedItems = NAV_CONFIG.filter((item) => {
     if (role === "admin") return true;
     
-    if (user?.permissions && user.permissions[item.id]) {
-      return !!user.permissions[item.id].canView;
+    if (user?.permissions) {
+      return !!user.permissions[item.id]?.canView;
     }
     
     return item.roles.includes(role);

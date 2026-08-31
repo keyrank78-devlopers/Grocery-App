@@ -423,7 +423,7 @@ const getOrders = async (req, res) => {
 // ───────────────────────────────────────────────────────────────
 const getAllOrdersAdmin = async (req, res) => {
   try {
-    const { search, orderStatus, paymentStatus, paymentMethod, page = 1, limit = 10 } = req.query;
+    const { search, orderStatus, paymentStatus, paymentMethod, warehouseId, page = 1, limit = 10 } = req.query;
 
     const filter = {};
     
@@ -432,7 +432,15 @@ const getAllOrdersAdmin = async (req, res) => {
     const user = req.admin || req.user;
     if (user && restrictedRoles.includes(user.role)) {
       const assignedIds = user.assignedWarehouses ? user.assignedWarehouses.map(w => typeof w === 'object' ? (w._id || w.id || w).toString() : w.toString()) : [];
-      filter.assignedWarehouse = { $in: assignedIds };
+      if (warehouseId && assignedIds.includes(warehouseId)) {
+        filter.assignedWarehouse = warehouseId;
+      } else {
+        filter.assignedWarehouse = { $in: assignedIds };
+      }
+    } else {
+      if (warehouseId) {
+        filter.assignedWarehouse = warehouseId;
+      }
     }
 
     // 1. Order Status Filter
@@ -482,6 +490,7 @@ const getAllOrdersAdmin = async (req, res) => {
       Order.find(filter)
         .populate("customer", "name email mobile")
         .populate("items.product", "sku image")
+        .populate("assignedWarehouse", "name warehouse_id")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limitNum)
@@ -523,6 +532,7 @@ const getOrderByIdAdmin = async (req, res) => {
     const order = await Order.findOne(query)
       .populate("customer", "name email mobile")
       .populate("items.product", "sku image")
+      .populate("assignedWarehouse", "name warehouse_id")
       .lean();
 
     if (!order) {
@@ -588,6 +598,7 @@ const updateOrderStatusAdmin = async (req, res) => {
     const populatedOrder = await Order.findById(order._id)
       .populate("customer", "name email mobile")
       .populate("items.product", "sku image")
+      .populate("assignedWarehouse", "name warehouse_id")
       .lean();
 
     return res.status(200).json({

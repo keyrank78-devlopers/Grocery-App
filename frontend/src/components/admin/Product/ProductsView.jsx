@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { useToast } from "../../../context/ToastContext";
+import { useAuth } from "../../../context/AuthContext";
 import Modal from "../../Modal";
 import AddProduct from "./AddProduct";
 import EditProduct from "./EditProduct";
@@ -41,6 +42,11 @@ const TrashIcon = () => (
 
 export default function ProductsView() {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  
+  const isAdmin = user?.role === "admin";
+  const canEdit = isAdmin || !!user?.permissions?.products?.canEdit;
+  const canDelete = isAdmin || !!user?.permissions?.products?.canDelete;
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -244,9 +250,11 @@ export default function ProductsView() {
           <h2>Product Management</h2>
 
         </div>
-        <button className="btn btn-primary" onClick={() => setIsAdding(true)}>
-          + Add Product
-        </button>
+        {canEdit && (
+          <button className="btn btn-primary" onClick={() => setIsAdding(true)}>
+            + Add Product
+          </button>
+        )}
       </div>
 
       {/* ── Premium Filter Controls ── */}
@@ -413,33 +421,39 @@ export default function ProductsView() {
                       >
                         <EyeIcon />
                       </button>
-                      <button
-                        className="btn btn-outline btn-xs"
-                        style={{ padding: "6px", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#4f46e5" }}
-                        onClick={() => setEditingProduct(p)}
-                        disabled={togglingId === p.sku || deletingId === p.sku}
-                        title="Edit Details"
-                      >
-                        <EditIcon />
-                      </button>
-                      <button
-                        className={`btn btn-outline btn-xs ${p.isActive ? "text-danger" : "text-success"}`}
-                        style={{ padding: "6px", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
-                        onClick={() => handleToggle(p)}
-                        disabled={togglingId === p.sku}
-                        title={p.isActive ? "Deactivate Product" : "Activate Product"}
-                      >
-                        {togglingId === p.sku ? "..." : <PowerIcon />}
-                      </button>
-                      <button
-                        className="btn btn-outline btn-xs text-danger"
-                        style={{ padding: "6px", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
-                        onClick={() => setDeleteProd(p)}
-                        disabled={deletingId === p.sku}
-                        title="Delete Product"
-                      >
-                        {deletingId === p.sku ? "..." : <TrashIcon />}
-                      </button>
+                      {canEdit && (
+                        <button
+                          className="btn btn-outline btn-xs"
+                          style={{ padding: "6px", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#4f46e5" }}
+                          onClick={() => setEditingProduct(p)}
+                          disabled={togglingId === p.sku || deletingId === p.sku}
+                          title="Edit Details"
+                        >
+                          <EditIcon />
+                        </button>
+                      )}
+                      {canEdit && (
+                        <button
+                          className={`btn btn-outline btn-xs ${p.isActive ? "text-danger" : "text-success"}`}
+                          style={{ padding: "6px", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                          onClick={() => handleToggle(p)}
+                          disabled={togglingId === p.sku}
+                          title={p.isActive ? "Deactivate Product" : "Activate Product"}
+                        >
+                          {togglingId === p.sku ? "..." : <PowerIcon />}
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          className="btn btn-outline btn-xs text-danger"
+                          style={{ padding: "6px", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                          onClick={() => setDeleteProd(p)}
+                          disabled={deletingId === p.sku}
+                          title="Delete Product"
+                        >
+                          {deletingId === p.sku ? "..." : <TrashIcon />}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

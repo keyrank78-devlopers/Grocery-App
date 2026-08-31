@@ -2,11 +2,17 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Modal from "../../Modal";
 import { useToast } from "../../../context/ToastContext";
+import { useAuth } from "../../../context/AuthContext";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function CategoriesView() {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  
+  const isAdmin = user?.role === "admin";
+  const canEdit = isAdmin || !!user?.permissions?.categories?.canEdit;
+  const canDelete = isAdmin || !!user?.permissions?.categories?.canDelete;
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -200,9 +206,11 @@ export default function CategoriesView() {
         <div className="page-header-content">
           <h2>Category Management</h2>
         </div>
-        <button className="btn btn-primary" onClick={() => setIsAddOpen(true)}>
-          + Add Category
-        </button>
+        {canEdit && (
+          <button className="btn btn-primary" onClick={() => setIsAddOpen(true)}>
+            + Add Category
+          </button>
+        )}
       </div>
 
       {/* ── Filter Toolbar ── */}
@@ -292,23 +300,29 @@ export default function CategoriesView() {
                   </td>
                   <td className="text-right">
                     <div className="staff-actions">
-                      <button className="btn btn-outline btn-xs" onClick={() => openEditModal(cat)}>
-                        Edit
-                      </button>
-                      <button
-                        className={`btn btn-outline btn-xs ${cat.isActive ? "text-danger" : "text-success"}`}
-                        onClick={() => handleToggleStatus(cat)}
-                        disabled={togglingId === cat.category_id}
-                      >
-                        {togglingId === cat.category_id ? "..." : cat.isActive ? "Disable" : "Enable"}
-                      </button>
-                      <button
-                        className="btn btn-outline btn-xs text-danger"
-                        onClick={() => setDeleteCat(cat)}
-                        disabled={deletingId === cat.category_id}
-                      >
-                        {deletingId === cat.category_id ? "..." : "Delete"}
-                      </button>
+                      {canEdit && (
+                        <>
+                          <button className="btn btn-outline btn-xs" onClick={() => openEditModal(cat)}>
+                            Edit
+                          </button>
+                          <button
+                            className={`btn btn-outline btn-xs ${cat.isActive ? "text-danger" : "text-success"}`}
+                            onClick={() => handleToggleStatus(cat)}
+                            disabled={togglingId === cat.category_id}
+                          >
+                            {togglingId === cat.category_id ? "..." : cat.isActive ? "Disable" : "Enable"}
+                          </button>
+                        </>
+                      )}
+                      {canDelete && (
+                        <button
+                          className="btn btn-outline btn-xs text-danger"
+                          onClick={() => setDeleteCat(cat)}
+                          disabled={deletingId === cat.category_id}
+                        >
+                          {deletingId === cat.category_id ? "..." : "Delete"}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

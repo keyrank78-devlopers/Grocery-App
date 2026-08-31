@@ -2,11 +2,17 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Modal from "../../Modal";
 import { useToast } from "../../../context/ToastContext";
+import { useAuth } from "../../../context/AuthContext";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function SubCategoriesView() {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  
+  const isAdmin = user?.role === "admin";
+  const canEdit = isAdmin || !!user?.permissions?.subcategories?.canEdit;
+  const canDelete = isAdmin || !!user?.permissions?.subcategories?.canDelete;
 
   const [subCategories, setSubCategories] = useState([]);
   const [categories, setCategories] = useState([]); // parent categories for dropdown
@@ -223,9 +229,11 @@ export default function SubCategoriesView() {
         <div className="page-header-content">
           <h2>Sub-Category Management</h2>
         </div>
-        <button className="btn btn-primary" onClick={() => setIsAddOpen(true)}>
-          + Add Sub-Category
-        </button>
+        {canEdit && (
+          <button className="btn btn-primary" onClick={() => setIsAddOpen(true)}>
+            + Add Sub-Category
+          </button>
+        )}
       </div>
 
       {/* ── Filter Toolbar ── */}
@@ -334,23 +342,29 @@ export default function SubCategoriesView() {
                   </td>
                   <td className="text-right">
                     <div className="staff-actions">
-                      <button className="btn btn-outline btn-xs" onClick={() => openEditModal(sub)}>
-                        Edit
-                      </button>
-                      <button
-                        className={`btn btn-outline btn-xs ${sub.isActive ? "text-danger" : "text-success"}`}
-                        onClick={() => handleToggle(sub)}
-                        disabled={togglingId === sub.sub_category_id}
-                      >
-                        {togglingId === sub.sub_category_id ? "..." : sub.isActive ? "Disable" : "Enable"}
-                      </button>
-                      <button
-                        className="btn btn-outline btn-xs text-danger"
-                        onClick={() => setDeleteSub(sub)}
-                        disabled={deletingId === sub.sub_category_id}
-                      >
-                        {deletingId === sub.sub_category_id ? "..." : "Delete"}
-                      </button>
+                      {canEdit && (
+                        <>
+                          <button className="btn btn-outline btn-xs" onClick={() => openEditModal(sub)}>
+                            Edit
+                          </button>
+                          <button
+                            className={`btn btn-outline btn-xs ${sub.isActive ? "text-danger" : "text-success"}`}
+                            onClick={() => handleToggle(sub)}
+                            disabled={togglingId === sub.sub_category_id}
+                          >
+                            {togglingId === sub.sub_category_id ? "..." : sub.isActive ? "Disable" : "Enable"}
+                          </button>
+                        </>
+                      )}
+                      {canDelete && (
+                        <button
+                          className="btn btn-outline btn-xs text-danger"
+                          onClick={() => setDeleteSub(sub)}
+                          disabled={deletingId === sub.sub_category_id}
+                        >
+                          {deletingId === sub.sub_category_id ? "..." : "Delete"}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
