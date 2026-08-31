@@ -194,6 +194,7 @@ const verifyStaffToken = async (req, res, next) => {
     }
 
     req.user = user;
+    req.isAdmin = (decoded.role === "admin");
     next();
   } catch (error) {
     console.error("Staff Auth Middleware Error:", error.message);
@@ -207,12 +208,12 @@ const verifyStaffToken = async (req, res, next) => {
 const checkPermission = (moduleName, action) => {
   return (req, res, next) => {
     // Admins bypass all permission checks
-    if (req.admin && req.admin.role === "admin") {
+    if (req.isAdmin || req.admin) {
       return next();
     }
     
     // Check staff permissions
-    const user = req.user || req.admin;
+    const user = req.user;
     if (user && user.permissions && user.permissions[moduleName] && user.permissions[moduleName][action]) {
       return next();
     }
