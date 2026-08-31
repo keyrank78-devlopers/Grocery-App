@@ -426,6 +426,14 @@ const getAllOrdersAdmin = async (req, res) => {
     const { search, orderStatus, paymentStatus, paymentMethod, page = 1, limit = 10 } = req.query;
 
     const filter = {};
+    
+    // Role-based Access Control
+    const restrictedRoles = ["warehouse_manager", "agent"];
+    const user = req.admin || req.user;
+    if (user && restrictedRoles.includes(user.role)) {
+      const assignedIds = user.assignedWarehouses ? user.assignedWarehouses.map(w => typeof w === 'object' ? (w._id || w.id || w).toString() : w.toString()) : [];
+      filter.assignedWarehouse = { $in: assignedIds };
+    }
 
     // 1. Order Status Filter
     if (orderStatus) {

@@ -111,8 +111,8 @@ export const NAV_CONFIG = [
     section: "Overview",
     icon: Icons.dashboard,
     component: DashboardView,
-    roles: ["admin", "sub_admin", "accountant"],
-    defaultFor: ["admin", "sub_admin", "accountant"],
+    roles: ["admin", "sub_admin", "accountant", "warehouse_manager", "agent"],
+    defaultFor: ["admin", "sub_admin", "accountant", "warehouse_manager", "agent"],
   },
   {
     id: "categories",
@@ -122,7 +122,7 @@ export const NAV_CONFIG = [
     icon: Icons.categories,
     component: CategoriesView,
     roles: ["admin", "sub_admin", "warehouse_manager"],
-    defaultFor: ["warehouse_manager"],
+    defaultFor: [],
   },
   {
     id: "banners",
@@ -171,7 +171,7 @@ export const NAV_CONFIG = [
     section: "Catalog",
     icon: Icons.inventory,
     component: InventoryView,
-    roles: ["admin", "warehouse_manager"],
+    roles: ["admin", "warehouse_manager", "agent"],
     defaultFor: [],
   },
   {
@@ -182,7 +182,7 @@ export const NAV_CONFIG = [
     icon: Icons.orders,
     component: OrdersView,
     roles: ["admin", "sub_admin", "accountant", "agent"],
-    defaultFor: ["agent"],
+    defaultFor: [],
   },
   {
     id: "customers",

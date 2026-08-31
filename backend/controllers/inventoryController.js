@@ -45,8 +45,10 @@ const getInventory = async (req, res) => {
 
     // Role-based Access Control
     const restrictedRoles = ["warehouse_manager", "agent"];
-    if (restrictedRoles.includes(req.admin.role)) {
-      const assignedIds = req.admin.assignedWarehouses ? req.admin.assignedWarehouses.map(w => w._id ? w._id.toString() : w.toString()) : [];
+    const user = req.admin || req.user;
+
+    if (restrictedRoles.includes(user?.role)) {
+      const assignedIds = user.assignedWarehouses ? user.assignedWarehouses.map(w => w._id ? w._id.toString() : w.toString()) : [];
       
       if (warehouseId) {
         if (!assignedIds.includes(warehouseId.toString())) {
@@ -121,8 +123,10 @@ const updateStock = async (req, res) => {
 
     // Role-based Access Control
     const restrictedRoles = ["warehouse_manager", "agent"];
-    if (restrictedRoles.includes(req.admin.role)) {
-      const assignedIds = req.admin.assignedWarehouses ? req.admin.assignedWarehouses.map(w => w._id ? w._id.toString() : w.toString()) : [];
+    const user = req.admin || req.user;
+
+    if (restrictedRoles.includes(user?.role)) {
+      const assignedIds = user.assignedWarehouses ? user.assignedWarehouses.map(w => w._id ? w._id.toString() : w.toString()) : [];
       if (!assignedIds.includes(warehouseId.toString())) {
         return res.status(403).json({ success: false, message: "Forbidden: You cannot update stock for an unassigned warehouse" });
       }

@@ -2,6 +2,7 @@ const Order = require("../models/Order");
 const Customer = require("../models/Customer");
 const Staff = require("../models/Staff");
 const Warehouse = require("../models/Warehouse");
+const mongoose = require("mongoose");
 
 // ───────────────────────────────────────────────────────────────
 // Get Admin Dashboard Analytics
@@ -9,6 +10,19 @@ const Warehouse = require("../models/Warehouse");
 // ───────────────────────────────────────────────────────────────
 const getDashboardAnalytics = async (req, res) => {
   try {
+    // Role-based Access Control
+    const restrictedRoles = ["warehouse_manager", "agent"];
+    const user = req.admin || req.user;
+    
+    let orderMatch = {};
+    let warehouseMatch = {};
+
+    if (restrictedRoles.includes(user?.role)) {
+      const assignedIds = user.assignedWarehouses ? user.assignedWarehouses.map(w => new mongoose.Types.ObjectId(w._id ? w._id.toString() : w.toString())) : [];
+      orderMatch.assignedWarehouse = { $in: assignedIds };
+      warehouseMatch._id = { $in: assignedIds };
+    }
+
     // 1. Fetch Global System Stats (Parallel queries to avoid blocking)
     const [
       totalCustomers,
@@ -16,8 +30,9 @@ const getDashboardAnalytics = async (req, res) => {
       orderAggregations
     ] = await Promise.all([
       Customer.countDocuments(),
-      Order.countDocuments(),
+      Order.countDocuments(orderMatch),
       Order.aggregate([
+        { $match: orderMatch },
         {
           $group: {
             _id: null,
@@ -45,20 +60,22 @@ const getDashboardAnalytics = async (req, res) => {
 
     // 2. Fetch Warehouse Specific Stats efficiently (No N+1 queries)
     const [warehouses, staffStats, orderStats] = await Promise.all([
-      Warehouse.find().select("name status").lean(),
+      Warehouse.find(warehouseMatch).select("name status").lean(),
       Staff.aggregate([
-        { $match: { assignedWarehouse: { $ne: null } } },
+        { $match: { assignedWarehouses: { $ne: [], $exists: true } } },
+        { $unwind: "$assignedWarehouses" },
+        { $match: restrictedRoles.includes(user?.role) ? { assignedWarehouses: { $in: orderMatch.assignedWarehouse.$in } } : {} },
         {
           $group: {
-            _id: "$assignedWarehouse",
+            _id: "$assignedWarehouses",
             totalStaff: { $sum: 1 },
-            agents: { $sum: { $cond: [{ $eq: ["$role", "Delivery_Agent"] }, 1, 0] } },
-            managers: { $sum: { $cond: [{ $eq: ["$role", "Warehouse_Manager"] }, 1, 0] } }
+            agents: { $sum: { $cond: [{ $eq: ["$role", "agent"] }, 1, 0] } },
+            managers: { $sum: { $cond: [{ $eq: ["$role", "warehouse_manager"] }, 1, 0] } }
           }
         }
       ]),
       Order.aggregate([
-        { $match: { assignedWarehouse: { $ne: null } } },
+        { $match: { ...orderMatch, assignedWarehouse: { $ne: null } } },
         {
           $group: {
             _id: "$assignedWarehouse",
