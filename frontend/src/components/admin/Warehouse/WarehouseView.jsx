@@ -495,10 +495,10 @@ export default function WarehouseView() {
   // ── Staff Assignment Helpers & Handlers ──────────────────────────
   const getAssignedStaffForWarehouse = (whId) => {
     const manager = staff.find(
-      (s) => s.role === "warehouse_manager" && s.assignedWarehouse?.id === whId
+      (s) => s.role === "warehouse_manager" && s.assignedWarehouses?.some(w => w.id === whId)
     );
     const agents = staff.filter(
-      (s) => s.role === "agent" && s.assignedWarehouse?.id === whId
+      (s) => s.role === "agent" && s.assignedWarehouses?.some(w => w.id === whId)
     );
 
     return (
@@ -520,13 +520,13 @@ export default function WarehouseView() {
     
     // Find who is currently assigned as manager to this warehouse
     const currentManager = staff.find(
-      (s) => s.role === "warehouse_manager" && s.assignedWarehouse?.id === wh._id
+      (s) => s.role === "warehouse_manager" && s.assignedWarehouses?.some(w => w.id === wh._id)
     );
     setSelectedManagerId(currentManager ? currentManager.id : "");
 
     // Find all agents currently assigned to this warehouse
     const currentAgents = staff.filter(
-      (s) => s.role === "agent" && s.assignedWarehouse?.id === wh._id
+      (s) => s.role === "agent" && s.assignedWarehouses?.some(w => w.id === wh._id)
     );
     setSelectedAgentIds(currentAgents.map((a) => a.id));
 
@@ -539,7 +539,7 @@ export default function WarehouseView() {
     try {
       // 1. Manager Assignment Check
       const currentManager = staff.find(
-        (s) => s.role === "warehouse_manager" && s.assignedWarehouse?.id === assignWh._id
+        (s) => s.role === "warehouse_manager" && s.assignedWarehouses?.some(w => w.id === assignWh._id)
       );
       const originalManagerId = currentManager ? currentManager.id : "";
 
@@ -548,7 +548,7 @@ export default function WarehouseView() {
         if (originalManagerId) {
           await axios.put(
             `${BASE_URL}/admin/staff/${originalManagerId}/assign-warehouse`,
-            { warehouseId: null },
+            { warehouseId: assignWh._id, action: "remove" },
             { withCredentials: true }
           );
         }
@@ -556,7 +556,7 @@ export default function WarehouseView() {
         if (selectedManagerId) {
           await axios.put(
             `${BASE_URL}/admin/staff/${selectedManagerId}/assign-warehouse`,
-            { warehouseId: assignWh._id },
+            { warehouseId: assignWh._id, action: "add" },
             { withCredentials: true }
           );
         }
@@ -564,7 +564,7 @@ export default function WarehouseView() {
 
       // 2. Agents Assignment Check
       const originalAgents = staff.filter(
-        (s) => s.role === "agent" && s.assignedWarehouse?.id === assignWh._id
+        (s) => s.role === "agent" && s.assignedWarehouses?.some(w => w.id === assignWh._id)
       );
       const originalAgentIds = originalAgents.map((a) => a.id);
 
@@ -577,7 +577,7 @@ export default function WarehouseView() {
       for (const id of agentsToAssign) {
         await axios.put(
           `${BASE_URL}/admin/staff/${id}/assign-warehouse`,
-          { warehouseId: assignWh._id },
+          { warehouseId: assignWh._id, action: "add" },
           { withCredentials: true }
         );
       }
@@ -586,7 +586,7 @@ export default function WarehouseView() {
       for (const id of agentsToUnassign) {
         await axios.put(
           `${BASE_URL}/admin/staff/${id}/assign-warehouse`,
-          { warehouseId: null },
+          { warehouseId: assignWh._id, action: "remove" },
           { withCredentials: true }
         );
       }

@@ -2,11 +2,13 @@ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import Modal from "../../Modal";
 import { useToast } from "../../../context/ToastContext";
+import { useAuth } from "../../../context/AuthContext";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function InventoryView() {
   const { showToast } = useToast();
+  const { user } = useAuth();
 
   const [inventory, setInventory] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
@@ -29,13 +31,25 @@ export default function InventoryView() {
     const fetchWarehouses = async () => {
       try {
         const res = await axios.get(`${BASE_URL}/admin/get-warehouses`, { withCredentials: true });
-        setWarehouses(res.data.data?.filter(w => w.isActive) || []);
+        let allWarehouses = res.data.data?.filter(w => w.isActive) || [];
+
+        // Restrict for Managers/Agents
+        if (user && ["warehouse_manager", "agent"].includes(user.role)) {
+          const assignedIds = user.assignedWarehouses?.map(w => typeof w === 'object' ? w.id || w._id : w) || [];
+          allWarehouses = allWarehouses.filter(w => assignedIds.includes(w._id) || assignedIds.includes(w.warehouse_id));
+          
+          if (allWarehouses.length === 1) {
+            setWarehouseFilter(allWarehouses[0]._id);
+          }
+        }
+        
+        setWarehouses(allWarehouses);
       } catch (err) {
         console.error(err);
       }
     };
     fetchWarehouses();
-  }, []);
+  }, [user]);
 
   // Debounce search
   useEffect(() => {
@@ -161,18 +175,22 @@ export default function InventoryView() {
         </div>
 
         {/* Warehouse Filter */}
-        <div style={{ minWidth: "200px" }}>
-          <select
-            value={warehouseFilter}
-            onChange={(e) => { setWarehouseFilter(e.target.value); setPage(1); }}
-            style={{ width: "100%", cursor: "pointer", height: "42px", padding: "10px 14px" }}
-          >
-            <option value="">All Warehouses</option>
-            {warehouses.map(w => (
-              <option key={w._id} value={w._id}>{w.name} ({w.warehouse_id})</option>
-            ))}
-          </select>
-        </div>
+        {(!user || !["warehouse_manager", "agent"].includes(user.role) || warehouses.length > 1) && (
+          <div style={{ minWidth: "200px" }}>
+            <select
+              value={warehouseFilter}
+              onChange={(e) => { setWarehouseFilter(e.target.value); setPage(1); }}
+              style={{ width: "100%", cursor: "pointer", height: "42px", padding: "10px 14px" }}
+            >
+              {(!user || !["warehouse_manager", "agent"].includes(user.role)) && (
+                <option value="">All Warehouses</option>
+              )}
+              {warehouses.map(w => (
+                <option key={w._id} value={w._id}>{w.name} ({w.warehouse_id})</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Clear Filters */}
         {(searchTerm || warehouseFilter) && (

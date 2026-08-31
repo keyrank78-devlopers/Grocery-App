@@ -105,8 +105,8 @@ const login = async (req, res) => {
 
     if (!user) {
       user = await Staff.findOne({ email: normalizedEmail }).select(
-        "_id staff_id name email phone password role address isActive refreshToken assignedWarehouse"
-      ).populate("assignedWarehouse", "name warehouse_id");
+        "_id staff_id name email phone password role address isActive refreshToken assignedWarehouses"
+      ).populate("assignedWarehouses", "name warehouse_id");
 
       if (user) {
         role = user.role;
@@ -156,8 +156,8 @@ const login = async (req, res) => {
     if (isStaff && user.address) {
       userData.address = user.address;
     }
-    if (isStaff && user.assignedWarehouse) {
-      userData.assignedWarehouse = user.assignedWarehouse;
+    if (isStaff && user.assignedWarehouses) {
+      userData.assignedWarehouses = user.assignedWarehouses;
     }
 
     res.cookie("token", accessToken, {
@@ -363,7 +363,8 @@ const getMe = async (req, res) => {
           mobile: role === "admin" ? user.mobile : user.phone,
           role: role,
           avatarUrl: role === "admin" ? user.avatarUrl : undefined,
-          assignedWarehouse: isStaff && user.assignedWarehouse ? user.assignedWarehouse : undefined,
+          address: isStaff && user.address ? user.address : undefined,
+          assignedWarehouses: isStaff && user.assignedWarehouses ? user.assignedWarehouses : undefined,
         },
       },
     });

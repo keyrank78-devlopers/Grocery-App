@@ -61,11 +61,10 @@ const staffSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Admin",
     },
-    assignedWarehouse: {
+    assignedWarehouses: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "Warehouse",
-      default: null,
-    },
+    }],
     refreshToken: {
       type: String,
       default: null,

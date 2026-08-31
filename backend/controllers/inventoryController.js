@@ -42,8 +42,26 @@ const getInventory = async (req, res) => {
     const productIds = products.map((p) => p._id);
     
     const stockQuery = { product: { $in: productIds } };
-    if (warehouseId) {
-       stockQuery.warehouse = warehouseId;
+
+    // Role-based Access Control
+    const restrictedRoles = ["warehouse_manager", "agent"];
+    if (restrictedRoles.includes(req.admin.role)) {
+      const assignedIds = req.admin.assignedWarehouses ? req.admin.assignedWarehouses.map(w => w._id ? w._id.toString() : w.toString()) : [];
+      
+      if (warehouseId) {
+        if (!assignedIds.includes(warehouseId.toString())) {
+           return res.status(403).json({ success: false, message: "Forbidden: You are not assigned to this warehouse" });
+        }
+        stockQuery.warehouse = warehouseId;
+      } else {
+        // Only fetch stock for their assigned warehouses
+        stockQuery.warehouse = { $in: assignedIds };
+      }
+    } else {
+      // Super Admins / Sub Admins
+      if (warehouseId) {
+         stockQuery.warehouse = warehouseId;
+      }
     }
 
     const stocks = await WarehouseStock.find(stockQuery)
@@ -99,6 +117,15 @@ const updateStock = async (req, res) => {
         success: false,
         message: "Stock quantity cannot be negative",
       });
+    }
+
+    // Role-based Access Control
+    const restrictedRoles = ["warehouse_manager", "agent"];
+    if (restrictedRoles.includes(req.admin.role)) {
+      const assignedIds = req.admin.assignedWarehouses ? req.admin.assignedWarehouses.map(w => w._id ? w._id.toString() : w.toString()) : [];
+      if (!assignedIds.includes(warehouseId.toString())) {
+        return res.status(403).json({ success: false, message: "Forbidden: You cannot update stock for an unassigned warehouse" });
+      }
     }
 
     // Upsert the stock record
