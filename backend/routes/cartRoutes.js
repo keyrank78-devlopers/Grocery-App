@@ -66,6 +66,13 @@ router.get("/view-cart", optionalCustomerAuth, resolveCartSession, getCart);
  *     tags: [Customer - Cart]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: x-warehouse-id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Warehouse ID for stock validation
  *     requestBody:
  *       required: true
  *       content:
@@ -98,6 +105,13 @@ router.post("/add", optionalCustomerAuth, resolveCartSession, addToCart);
  *     tags: [Customer - Cart]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: x-warehouse-id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Warehouse ID for stock validation
  *     requestBody:
  *       required: true
  *       content:

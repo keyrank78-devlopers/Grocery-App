@@ -3,26 +3,9 @@ import axios from "axios";
 import Modal from "../../Modal";
 import { useToast } from "../../../context/ToastContext";
 
-// Leaflet assets & CSS
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
 
-// Workaround for default marker icon path resolution in Vite bundling
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerIconRetina from "leaflet/dist/images/marker-icon-2x.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
-
-let DefaultIcon = L.icon({
-  iconUrl: markerIcon,
-  iconRetinaUrl: markerIconRetina,
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  tooltipAnchor: [16, -28],
-  shadowSize: [41, 41]
-});
-L.Marker.prototype.options.icon = DefaultIcon;
+const googleMapsLibraries = ["places"];
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -73,9 +56,14 @@ export default function WarehouseView() {
   // viewMode can be: 'list', 'add', 'edit'
   const [viewMode, setViewMode] = useState("list");
 
-  // Map state refs
-  const mapRef = useRef(null);
-  const markerRef = useRef(null);
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries: googleMapsLibraries
+  });
+
+  const [mapCenter, setMapCenter] = useState({ lat: 28.7041, lng: 77.1025 });
+  const [markerPosition, setMarkerPosition] = useState(null);
 
   // ── Add Form State ─────────────────────────────────────────────
   const [addForm, setAddForm] = useState({
@@ -145,90 +133,62 @@ export default function WarehouseView() {
   useEffect(() => {
     if (viewMode === "list") return;
 
-    // Wait for the DOM element to mount
-    const timer = setTimeout(() => {
-      const mapContainer = document.getElementById("warehouse-map");
-      if (!mapContainer) return;
+    let initialLat = 28.7041;
+    let initialLng = 77.1025;
 
-      // Determine initial coordinates (Default to Delhi, India if empty)
-      let initialLat = 28.7041;
-      let initialLng = 77.1025;
+    if (viewMode === "edit" && editForm.latitude && editForm.longitude) {
+      initialLat = Number(editForm.latitude);
+      initialLng = Number(editForm.longitude);
+    } else if (viewMode === "add" && addForm.latitude && addForm.longitude) {
+      initialLat = Number(addForm.latitude);
+      initialLng = Number(addForm.longitude);
+    }
 
-      if (viewMode === "edit" && editForm.latitude && editForm.longitude) {
-        initialLat = Number(editForm.latitude);
-        initialLng = Number(editForm.longitude);
-      } else if (viewMode === "add" && addForm.latitude && addForm.longitude) {
-        initialLat = Number(addForm.latitude);
-        initialLng = Number(addForm.longitude);
-      }
+    setMapCenter({ lat: initialLat, lng: initialLng });
 
-      // 1. Create Leaflet Map Instance
-      const map = L.map("warehouse-map").setView([initialLat, initialLng], 13);
-      mapRef.current = map;
-
-      // 2. Add OpenStreetMap Tiles
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map);
-
-      // 3. Create initial marker if coordinates exist
-      if (
-        (viewMode === "edit" && editForm.latitude && editForm.longitude) ||
-        (viewMode === "add" && addForm.latitude && addForm.longitude)
-      ) {
-        markerRef.current = L.marker([initialLat, initialLng], { draggable: true }).addTo(map);
-        // Bind dragend event
-        markerRef.current.on("dragend", async (event) => {
-          const marker = event.target;
-          const position = marker.getLatLng();
-          await reverseGeocode(position.lat, position.lng);
-        });
-      }
-
-      // 4. Click Event to place marker and fetch address
-      map.on("click", async (e) => {
-        const { lat, lng } = e.latlng;
-        
-        if (markerRef.current) {
-          markerRef.current.setLatLng(e.latlng);
-        } else {
-          markerRef.current = L.marker(e.latlng, { draggable: true }).addTo(map);
-          markerRef.current.on("dragend", async (event) => {
-            const marker = event.target;
-            const position = marker.getLatLng();
-            await reverseGeocode(position.lat, position.lng);
-          });
-        }
-        await reverseGeocode(lat, lng);
-      });
-    }, 100);
-
-    return () => {
-      clearTimeout(timer);
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-      markerRef.current = null;
-    };
+    if (
+      (viewMode === "edit" && editForm.latitude && editForm.longitude) ||
+      (viewMode === "add" && addForm.latitude && addForm.longitude)
+    ) {
+      setMarkerPosition({ lat: initialLat, lng: initialLng });
+    } else {
+      setMarkerPosition(null);
+    }
   }, [viewMode, editWh]);
 
-  // ── Reverse Geocoding via Nominatim API ──────────────────────────
+  // ── Reverse Geocoding via Google Maps API ──────────────────────────
   const reverseGeocode = async (lat, lng) => {
     try {
-      const res = await axios.get(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
-        { withCredentials: false }
-      );
-      const address = res.data.address || {};
-      const road = address.road || address.pedestrian || "";
-      const neighbourhood = address.neighbourhood || address.suburb || "";
-      const city = address.city || address.town || address.village || address.suburb || "";
-      const state = address.state || "";
-      const pincode = address.postcode || "";
+      if (!window.google || !window.google.maps) {
+        throw new Error("Google Maps API not loaded");
+      }
+      
+      const geocoder = new window.google.maps.Geocoder();
+      const response = await geocoder.geocode({ location: { lat, lng } });
+      
+      if (!response.results || response.results.length === 0) {
+        throw new Error("No address found");
+      }
 
-      // Construct a clean Address Line 1
-      const addressLine1 = [road, neighbourhood].filter(Boolean).join(", ") || res.data.display_name?.split(",")?.[0] || "Marker Location";
+      const result = response.results[0];
+      const addressComponents = result.address_components;
+      
+      let city = "";
+      let state = "";
+      let pincode = "";
+      let route = "";
+      let sublocality = "";
+
+      addressComponents.forEach(component => {
+        const types = component.types;
+        if (types.includes("locality")) city = component.long_name;
+        if (types.includes("administrative_area_level_1")) state = component.long_name;
+        if (types.includes("postal_code")) pincode = component.long_name;
+        if (types.includes("route")) route = component.long_name;
+        if (types.includes("sublocality") || types.includes("sublocality_level_1")) sublocality = component.long_name;
+      });
+
+      const addressLine1 = [route, sublocality].filter(Boolean).join(", ") || result.formatted_address.split(",")[0] || "Marker Location";
 
       if (viewMode === "add") {
         setAddForm((prev) => ({
@@ -270,47 +230,42 @@ export default function WarehouseView() {
     if (!searchQuery.trim()) return;
     setIsSearchingAddress(true);
     try {
-      const res = await axios.get(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q=${encodeURIComponent(
-          searchQuery.trim()
-        )}`,
-        { withCredentials: false }
-      );
-      if (res.data.length === 0) {
+      if (!window.google || !window.google.maps) {
+        throw new Error("Google Maps API not loaded");
+      }
+      
+      const geocoder = new window.google.maps.Geocoder();
+      const response = await geocoder.geocode({ address: searchQuery.trim() });
+      
+      if (!response.results || response.results.length === 0) {
         showToast("Address not found. Please try a different query.", "warning");
         return;
       }
       
-      const result = res.data[0];
-      const lat = Number(result.lat);
-      const lng = Number(result.lon);
+      const result = response.results[0];
+      const lat = result.geometry.location.lat();
+      const lng = result.geometry.location.lng();
 
-      // Pan map
-      if (mapRef.current) {
-        mapRef.current.setView([lat, lng], 15);
-      }
+      setMapCenter({ lat, lng });
+      setMarkerPosition({ lat, lng });
+      
+      const addressComponents = result.address_components;
+      let city = "";
+      let state = "";
+      let pincode = "";
+      let route = "";
+      let sublocality = "";
 
-      // Add/Update marker
-      if (markerRef.current) {
-        markerRef.current.setLatLng([lat, lng]);
-      } else if (mapRef.current) {
-        markerRef.current = L.marker([lat, lng], { draggable: true }).addTo(mapRef.current);
-        markerRef.current.on("dragend", async (event) => {
-          const marker = event.target;
-          const position = marker.getLatLng();
-          await reverseGeocode(position.lat, position.lng);
-        });
-      }
+      addressComponents.forEach(component => {
+        const types = component.types;
+        if (types.includes("locality")) city = component.long_name;
+        if (types.includes("administrative_area_level_1")) state = component.long_name;
+        if (types.includes("postal_code")) pincode = component.long_name;
+        if (types.includes("route")) route = component.long_name;
+        if (types.includes("sublocality") || types.includes("sublocality_level_1")) sublocality = component.long_name;
+      });
 
-      // Parse address details
-      const address = result.address || {};
-      const road = address.road || address.pedestrian || "";
-      const neighbourhood = address.neighbourhood || address.suburb || "";
-      const city = address.city || address.town || address.village || address.suburb || "";
-      const state = address.state || "";
-      const pincode = address.postcode || "";
-
-      const addressLine1 = [road, neighbourhood].filter(Boolean).join(", ") || result.display_name?.split(",")?.[0] || "";
+      const addressLine1 = [route, sublocality].filter(Boolean).join(", ") || result.formatted_address.split(",")[0] || "";
 
       // Update state
       if (viewMode === "add") {
@@ -1175,16 +1130,41 @@ export default function WarehouseView() {
               </button>
             </form>
 
-            <div
-              id="warehouse-map"
-              style={{
-                height: "500px",
-                width: "100%",
-                borderRadius: "8px",
-                border: "1px solid #dee2e6",
-                zIndex: 1,
-              }}
-            />
+            {isLoaded ? (
+              <GoogleMap
+                mapContainerStyle={{
+                  height: "500px",
+                  width: "100%",
+                  borderRadius: "8px",
+                  border: "1px solid #dee2e6",
+                }}
+                center={mapCenter}
+                zoom={13}
+                onClick={(e) => {
+                  const lat = e.latLng.lat();
+                  const lng = e.latLng.lng();
+                  setMarkerPosition({ lat, lng });
+                  reverseGeocode(lat, lng);
+                }}
+              >
+                {markerPosition && (
+                  <Marker
+                    position={markerPosition}
+                    draggable={true}
+                    onDragEnd={(e) => {
+                      const lat = e.latLng.lat();
+                      const lng = e.latLng.lng();
+                      setMarkerPosition({ lat, lng });
+                      reverseGeocode(lat, lng);
+                    }}
+                  />
+                )}
+              </GoogleMap>
+            ) : (
+              <div style={{ height: "500px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                Loading Map...
+              </div>
+            )}
           </div>
         </div>
       </div>

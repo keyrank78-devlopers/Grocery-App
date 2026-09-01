@@ -967,3 +967,14 @@ TypeError: Cannot set property query of #<IncomingMessage> which has only a gett
 [2026-08-31 15:35:07] HTTP: [0mOPTIONS /api/v1/admin/revenue?startDate=2026-07-31&endDate=2026-08-31&warehouseId=6a8970c1263081c2a295176e [32m204[0m 0.175 ms - 0[0m
 [2026-08-31 15:35:07] HTTP: [0mGET /api/v1/admin/revenue?startDate=2026-07-31&endDate=2026-08-31&warehouseId=6a8970c1263081c2a295176e [32m200[0m 181.413 ms - 315[0m
 [2026-08-31 18:17:02] WARN: SIGINT received. Shutting down gracefully...
+[2026-09-01 10:53:29] INFO: Server running on port 5000 in development mode
+[2026-09-01 10:53:37] HTTP: [0mGET /api-docs/ [32m200[0m 7.073 ms - -[0m
+[2026-09-01 10:53:37] HTTP: [0mGET /api-docs/swagger-ui-init.js [32m200[0m 0.971 ms - -[0m
+[2026-09-01 10:53:37] HTTP: [0mGET /api-docs/swagger-ui.css [32m200[0m 11.316 ms - -[0m
+[2026-09-01 10:53:37] HTTP: [0mGET /api-docs/swagger-ui-init.js [32m200[0m 0.913 ms - -[0m
+[2026-09-01 10:53:37] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [32m200[0m 27.670 ms - -[0m
+[2026-09-01 10:53:37] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [32m200[0m 17.707 ms - -[0m
+[2026-09-01 10:53:37] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [32m200[0m 2.008 ms - -[0m
+[2026-09-01 10:53:37] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [32m200[0m 1.240 ms - -[0m
+[2026-09-01 10:53:38] HTTP: [0mGET /api-docs/favicon-32x32.png [32m200[0m 1.410 ms - 628[0m
+[2026-09-01 14:40:42] WARN: SIGINT received. Shutting down gracefully...
