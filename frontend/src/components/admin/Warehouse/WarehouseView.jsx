@@ -49,9 +49,11 @@ export default function WarehouseView() {
   const [staff, setStaff] = useState([]);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [assignWh, setAssignWh] = useState(null);
-  const [selectedManagerId, setSelectedManagerId] = useState("");
+  const [selectedManagerIds, setSelectedManagerIds] = useState([]);
   const [selectedAgentIds, setSelectedAgentIds] = useState([]);
   const [isAssigningStaff, setIsAssigningStaff] = useState(false);
+  const [managerSearch, setManagerSearch] = useState("");
+  const [agentSearch, setAgentSearch] = useState("");
 
   // viewMode can be: 'list', 'add', 'edit'
   const [viewMode, setViewMode] = useState("list");
@@ -449,7 +451,7 @@ export default function WarehouseView() {
 
   // ── Staff Assignment Helpers & Handlers ──────────────────────────
   const getAssignedStaffForWarehouse = (whId) => {
-    const manager = staff.find(
+    const managers = staff.filter(
       (s) => s.role === "warehouse_manager" && s.assignedWarehouses?.some(w => w.id === whId)
     );
     const agents = staff.filter(
@@ -458,7 +460,7 @@ export default function WarehouseView() {
 
     return (
       <div style={{ fontSize: "12px", lineHeight: "1.4" }}>
-        <div>Manager: <strong>{manager ? manager.name : "Unassigned"}</strong></div>
+        <div>Managers: <strong>{managers.length > 0 ? managers.map((m) => m.name).join(", ") : "Unassigned"}</strong></div>
         <div style={{ color: "#6c757d", marginTop: "2px" }}>
           Agents: {agents.length > 0 ? (
             <strong>{agents.map((a) => a.name).join(", ")}</strong>
@@ -470,14 +472,14 @@ export default function WarehouseView() {
     );
   };
 
-  const handleOpenAssignModal = (wh) => {
+  const handleOpenAssignPage = (wh) => {
     setAssignWh(wh);
     
     // Find who is currently assigned as manager to this warehouse
-    const currentManager = staff.find(
+    const currentManagers = staff.filter(
       (s) => s.role === "warehouse_manager" && s.assignedWarehouses?.some(w => w.id === wh._id)
     );
-    setSelectedManagerId(currentManager ? currentManager.id : "");
+    setSelectedManagerIds(currentManagers.map((m) => m.id));
 
     // Find all agents currently assigned to this warehouse
     const currentAgents = staff.filter(
@@ -485,36 +487,38 @@ export default function WarehouseView() {
     );
     setSelectedAgentIds(currentAgents.map((a) => a.id));
 
-    setIsAssignOpen(true);
+    setManagerSearch("");
+    setAgentSearch("");
+    setViewMode("assign");
   };
 
   const handleSaveStaffAssignment = async (e) => {
     e.preventDefault();
     setIsAssigningStaff(true);
     try {
-      // 1. Manager Assignment Check
-      const currentManager = staff.find(
+      // 1. Managers Assignment Check
+      const originalManagers = staff.filter(
         (s) => s.role === "warehouse_manager" && s.assignedWarehouses?.some(w => w.id === assignWh._id)
       );
-      const originalManagerId = currentManager ? currentManager.id : "";
+      const originalManagerIds = originalManagers.map((m) => m.id);
 
-      if (selectedManagerId !== originalManagerId) {
-        // Unassign old manager if they existed
-        if (originalManagerId) {
-          await axios.put(
-            `${BASE_URL}/admin/staff/${originalManagerId}/assign-warehouse`,
-            { warehouseId: assignWh._id, action: "remove" },
-            { withCredentials: true }
-          );
-        }
-        // Assign new manager if selected
-        if (selectedManagerId) {
-          await axios.put(
-            `${BASE_URL}/admin/staff/${selectedManagerId}/assign-warehouse`,
-            { warehouseId: assignWh._id, action: "add" },
-            { withCredentials: true }
-          );
-        }
+      const managersToAssign = selectedManagerIds.filter((id) => !originalManagerIds.includes(id));
+      const managersToUnassign = originalManagerIds.filter((id) => !selectedManagerIds.includes(id));
+
+      for (const id of managersToAssign) {
+        await axios.put(
+          `${BASE_URL}/admin/staff/${id}/assign-warehouse`,
+          { warehouseId: assignWh._id, action: "add" },
+          { withCredentials: true }
+        );
+      }
+
+      for (const id of managersToUnassign) {
+        await axios.put(
+          `${BASE_URL}/admin/staff/${id}/assign-warehouse`,
+          { warehouseId: assignWh._id, action: "remove" },
+          { withCredentials: true }
+        );
       }
 
       // 2. Agents Assignment Check
@@ -547,7 +551,7 @@ export default function WarehouseView() {
       }
 
       showToast("Staff assignments updated successfully!", "success");
-      setIsAssignOpen(false);
+      setViewMode("list");
 
       // Re-fetch staff data to update local assignments state
       const staffRes = await axios.get(`${BASE_URL}/admin/get-staff`, { withCredentials: true });
@@ -606,8 +610,14 @@ export default function WarehouseView() {
           <div className="page-header-content">
             <h2>Warehouse Management</h2>
           </div>
-          <button className="btn btn-primary" onClick={() => setViewMode("add")}>
-            + Add Warehouse
+          <button 
+            className="btn btn-primary" 
+            onClick={() => setViewMode("add")}
+            disabled={warehouses.length > 0}
+            title={warehouses.length > 0 ? "Only 1 Master Warehouse allowed" : "Add Warehouse"}
+            style={warehouses.length > 0 ? { opacity: 0.6, cursor: "not-allowed" } : {}}
+          >
+            + Add Master Warehouse
           </button>
         </div>
 
@@ -709,9 +719,9 @@ export default function WarehouseView() {
                           <button
                             className="btn btn-outline btn-xs"
                             style={{ color: "#4f46e5", borderColor: "#4f46e5" }}
-                            onClick={() => handleOpenAssignModal(wh)}
+                            onClick={() => handleOpenAssignPage(wh)}
                           >
-                            Staff
+                            Assign Staff
                           </button>
                           <button
                             className={`btn btn-outline btn-xs ${wh.isActive ? "text-danger" : "text-success"}`}
@@ -794,57 +804,132 @@ export default function WarehouseView() {
           </div>
         </Modal>
 
-        {/* ── Assign Staff Modal ── */}
-        <Modal
-          isOpen={isAssignOpen}
-          onClose={() => setIsAssignOpen(false)}
-          title={`Assign Staff to: ${assignWh?.name || ""}`}
-        >
-          <form onSubmit={handleSaveStaffAssignment}>
-            <div className="form-group" style={{ marginBottom: "16px" }}>
-              <label style={{ fontWeight: "600", display: "block", marginBottom: "6px", fontSize: "14px" }}>
-                Warehouse Manager
-              </label>
-              <select
-                value={selectedManagerId}
-                onChange={(e) => setSelectedManagerId(e.target.value)}
-                style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none", fontSize: "14px" }}
-              >
-                <option value="">-- Select Manager --</option>
-                {staff
-                  .filter((s) => s.role === "warehouse_manager")
-                  .map((m) => {
-                    const assignedTo = m.assignedWarehouse && m.assignedWarehouse.id !== assignWh?._id
-                      ? ` (Assigned to ${m.assignedWarehouse.name})`
-                      : "";
-                    return (
-                      <option key={m.id} value={m.id}>
-                        {m.name} {assignedTo}
-                      </option>
-                    );
-                  })}
-              </select>
-            </div>
+      </div>
+    );
+  }
 
-            <div className="form-group" style={{ marginBottom: "16px" }}>
-              <label style={{ fontWeight: "600", display: "block", marginBottom: "6px", fontSize: "14px" }}>
-                Delivery Agents
+  // 1.5 ASSIGN STAFF FULL-PAGE VIEW
+  if (viewMode === "assign") {
+    return (
+      <div className="content-section active">
+        <div className="page-header" style={{ marginBottom: "20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <button
+              className="btn btn-outline"
+              style={{ padding: "6px 12px", fontSize: "14px" }}
+              onClick={() => setViewMode("list")}
+            >
+              ← Back to List
+            </button>
+            <h2 style={{ margin: 0 }}>Assign Staff to: {assignWh?.name || ""}</h2>
+          </div>
+        </div>
+        
+        <div className="card" style={{ padding: "24px", maxWidth: "800px", margin: "0 auto" }}>
+          <p className="text-muted" style={{ marginBottom: "24px" }}>
+            Select a Warehouse Manager and multiple Delivery Agents to operate this warehouse.
+          </p>
+          <form onSubmit={handleSaveStaffAssignment}>
+            <div className="form-group" style={{ marginBottom: "24px" }}>
+              <label style={{ fontWeight: "600", display: "block", marginBottom: "8px", fontSize: "15px" }}>
+                Warehouse Managers
               </label>
+              <div style={{ marginBottom: "12px" }}>
+                <input
+                  type="text"
+                  placeholder="Search managers..."
+                  value={managerSearch}
+                  onChange={(e) => setManagerSearch(e.target.value)}
+                  style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none", fontSize: "14px" }}
+                />
+              </div>
               <div
                 style={{
-                  maxHeight: "180px",
+                  maxHeight: "300px",
                   overflowY: "auto",
                   border: "1px solid #dee2e6",
                   borderRadius: "6px",
-                  padding: "10px",
+                  padding: "16px",
+                  background: "#fcfcfc",
+                }}
+              >
+                {staff.filter((s) => s.role === "warehouse_manager").length === 0 ? (
+                  <p className="text-muted" style={{ margin: 0 }}>No warehouse managers found.</p>
+                ) : (
+                  staff
+                    .filter((s) => s.role === "warehouse_manager")
+                    .filter((s) => s.name.toLowerCase().includes(managerSearch.toLowerCase()))
+                    .map((manager) => {
+                      const isChecked = selectedManagerIds.includes(manager.id);
+                      const assignedTo = manager.assignedWarehouse && manager.assignedWarehouse.id !== assignWh?._id
+                        ? ` (Assigned to ${manager.assignedWarehouse.name})`
+                        : "";
+
+                      const handleToggleCheck = (e) => {
+                        if (e.target.checked) {
+                          setSelectedManagerIds((prev) => [...prev, manager.id]);
+                        } else {
+                          setSelectedManagerIds((prev) => prev.filter((id) => id !== manager.id));
+                        }
+                      };
+
+                      return (
+                        <div
+                          key={manager.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            padding: "8px 0",
+                            borderBottom: "1px solid #f1f1f1",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            id={`manager-chk-${manager.id}`}
+                            checked={isChecked}
+                            onChange={handleToggleCheck}
+                            style={{ cursor: "pointer", width: "16px", height: "16px" }}
+                          />
+                          <label htmlFor={`manager-chk-${manager.id}`} style={{ margin: 0, cursor: "pointer", fontSize: "15px" }}>
+                            <strong>{manager.name}</strong> <span style={{ color: "#6c757d" }}>{assignedTo}</span>
+                          </label>
+                        </div>
+                      );
+                    })
+                )}
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: "24px" }}>
+              <label style={{ fontWeight: "600", display: "block", marginBottom: "8px", fontSize: "15px" }}>
+                Delivery Agents
+              </label>
+              <div style={{ marginBottom: "12px" }}>
+                <input
+                  type="text"
+                  placeholder="Search agents..."
+                  value={agentSearch}
+                  onChange={(e) => setAgentSearch(e.target.value)}
+                  style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none", fontSize: "14px" }}
+                />
+              </div>
+              <div
+                style={{
+                  maxHeight: "300px",
+                  overflowY: "auto",
+                  border: "1px solid #dee2e6",
+                  borderRadius: "6px",
+                  padding: "16px",
                   background: "#fcfcfc",
                 }}
               >
                 {staff.filter((s) => s.role === "agent").length === 0 ? (
-                  <p className="text-muted text-sm" style={{ margin: 0 }}>No delivery agents found.</p>
+                  <p className="text-muted" style={{ margin: 0 }}>No delivery agents found.</p>
                 ) : (
                   staff
                     .filter((s) => s.role === "agent")
+                    .filter((s) => s.name.toLowerCase().includes(agentSearch.toLowerCase()))
                     .map((agent) => {
                       const isChecked = selectedAgentIds.includes(agent.id);
                       const assignedTo = agent.assignedWarehouse && agent.assignedWarehouse.id !== assignWh?._id
@@ -865,8 +950,8 @@ export default function WarehouseView() {
                           style={{
                             display: "flex",
                             alignItems: "center",
-                            gap: "8px",
-                            padding: "6px 0",
+                            gap: "12px",
+                            padding: "8px 0",
                             borderBottom: "1px solid #f1f1f1",
                           }}
                         >
@@ -875,10 +960,10 @@ export default function WarehouseView() {
                             id={`agent-chk-${agent.id}`}
                             checked={isChecked}
                             onChange={handleToggleCheck}
-                            style={{ cursor: "pointer" }}
+                            style={{ cursor: "pointer", width: "16px", height: "16px" }}
                           />
-                          <label htmlFor={`agent-chk-${agent.id}`} style={{ margin: 0, cursor: "pointer", fontSize: "14px" }}>
-                            <strong>{agent.name}</strong> {assignedTo}
+                          <label htmlFor={`agent-chk-${agent.id}`} style={{ margin: 0, cursor: "pointer", fontSize: "15px" }}>
+                            <strong>{agent.name}</strong> <span style={{ color: "#6c757d" }}>{assignedTo}</span>
                           </label>
                         </div>
                       );
@@ -887,21 +972,22 @@ export default function WarehouseView() {
               </div>
             </div>
 
-            <div className="modal-actions" style={{ marginTop: "24px" }}>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "32px" }}>
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={() => setIsAssignOpen(false)}
+                onClick={() => setViewMode("list")}
                 disabled={isAssigningStaff}
+                style={{ padding: "10px 20px" }}
               >
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary" disabled={isAssigningStaff}>
+              <button type="submit" className="btn btn-primary" disabled={isAssigningStaff} style={{ padding: "10px 20px" }}>
                 {isAssigningStaff ? "Saving..." : "Save Assignments"}
               </button>
             </div>
           </form>
-        </Modal>
+        </div>
       </div>
     );
   }

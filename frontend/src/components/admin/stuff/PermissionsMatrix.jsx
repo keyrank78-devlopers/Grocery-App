@@ -10,6 +10,7 @@ const MODULES = [
   { id: 'customers', label: 'Customers' },
   { id: 'staff', label: 'Staff Management' },
   { id: 'warehouses', label: 'Warehouses' },
+  { id: 'revenue', label: 'Revenue & Analytics' },
   { id: 'banners', label: 'Banners' },
   { id: 'coupons', label: 'Coupons' },
   { id: 'faq', label: 'FAQs' },

@@ -213,7 +213,7 @@ export default function OrdersView() {
           </select>
         </div>
 
-        {/* Warehouse Filter */}
+        {/* Warehouse Filter Disabled for Single Warehouse setup
         {(!user || !["warehouse_manager", "agent"].includes(user.role) || warehouses.length > 1) && (
           <div style={{ minWidth: "160px" }}>
             <select
@@ -230,6 +230,7 @@ export default function OrdersView() {
             </select>
           </div>
         )}
+        */}
 
         {/* Clear Filters */}
         {(searchTerm || orderStatusFilter || paymentStatusFilter || paymentMethodFilter || warehouseFilter) && (
@@ -267,7 +268,7 @@ export default function OrdersView() {
               <th>Order ID</th>
               <th>Date / Time</th>
               <th>Customer</th>
-              <th>Warehouse</th>
+              {/* <th>Warehouse</th> */}
               <th>Items Summary</th>
               <th>Total Price (₹)</th>
               <th>Payment Method</th>
@@ -303,7 +304,7 @@ export default function OrdersView() {
                       <strong>{order.shippingAddress?.name || "—"}</strong> <br />
                       <small className="text-muted">{order.shippingAddress?.mobile || ""}</small>
                     </td>
-                    <td>
+                    {/* <td>
                       {order.assignedWarehouse ? (
                         <>
                           <span style={{ display: "block", fontSize: "13px", fontWeight: "500" }}>{order.assignedWarehouse.name}</span>
@@ -312,7 +313,7 @@ export default function OrdersView() {
                       ) : (
                         <span className="text-muted text-sm">Unassigned</span>
                       )}
-                    </td>
+                    </td> */}
                     <td>
                       <span className="text-muted text-sm" style={{ display: "block", maxWidth: "240px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={order.items.map(i => `${i.name} x${i.quantity}`).join(", ")}>
                         {order.items.map(i => `${i.name} x${i.quantity}`).join(", ")}

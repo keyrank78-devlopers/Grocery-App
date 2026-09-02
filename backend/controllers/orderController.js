@@ -117,44 +117,18 @@ const checkout = async (req, res) => {
 
     const [longitude, latitude] = address.location.coordinates;
 
-    // 3.5 Find Serviceable Warehouse using $geoNear
+    // 3.5 Find Serviceable Warehouse (Default Master Warehouse)
     const Warehouse = require("../models/Warehouse");
-    const nearestWarehouses = await Warehouse.aggregate([
-      {
-        $geoNear: {
-          near: {
-            type: "Point",
-            coordinates: [longitude, latitude],
-          },
-          distanceField: "distance", // Distance in meters
-          distanceMultiplier: 0.001, // Convert distance to km
-          spherical: true,
-          query: { isActive: true },
-        },
-      },
-      {
-        $match: {
-          $expr: {
-            $lte: ["$distance", "$deliveryRangeKm"], // Compare distance with warehouse specific delivery range
-          },
-        },
-      },
-      {
-        $sort: { distance: 1 },
-      },
-      {
-        $limit: 1,
-      },
-    ]);
+    const defaultWarehouse = await Warehouse.findOne({ isActive: true }).lean();
 
-    if (!nearestWarehouses || nearestWarehouses.length === 0) {
+    if (!defaultWarehouse) {
       return res.status(400).json({
         success: false,
-        message: "Sorry, we do not currently deliver to your location. No warehouses in range.",
+        message: "Sorry, we are not accepting orders right now. System maintenance.",
       });
     }
 
-    const assignedWarehouseId = nearestWarehouses[0]._id;
+    const assignedWarehouseId = defaultWarehouse._id;
 
     // 4. Verify Stock and calculate pricing details
     const pricingResult = await calculatePricing(cart, couponCode, assignedWarehouseId);

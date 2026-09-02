@@ -40,64 +40,32 @@ const checkServiceability = async (req, res) => {
       });
     }
 
-    // GeoNear aggregation search
-    const nearestWarehouses = await Warehouse.aggregate([
-      {
-        $geoNear: {
-          near: {
-            type: "Point",
-            coordinates: [searchLng, searchLat],
-          },
-          distanceField: "distanceKm",
-          distanceMultiplier: 0.001, // convert meters to KM
-          spherical: true,
-          query: { isActive: true },
-        },
-      },
-      {
-        $match: {
-          $expr: {
-            $lte: ["$distanceKm", "$deliveryRangeKm"],
-          },
-        },
-      },
-      {
-        $sort: { distanceKm: 1 },
-      },
-      {
-        $limit: 1,
-      },
-    ]);
+    // Find default active warehouse instead of doing GeoNear search
+    const defaultWarehouse = await Warehouse.findOne({ isActive: true }).lean();
 
-    if (!nearestWarehouses || nearestWarehouses.length === 0) {
+    if (!defaultWarehouse) {
       return res.status(200).json({
         success: true,
         isServiceable: false,
         estimatedDeliveryTime: null,
         warehouse: null,
-        message: "Sorry, we currently do not deliver to this location.",
+        message: "Sorry, we currently do not deliver. System maintenance.",
       });
     }
 
-    const warehouse = nearestWarehouses[0];
-    const dist = Number(warehouse.distanceKm.toFixed(2));
-
-    // Dynamic ETA calculation based on distance
-    let etaMinutes = "8-12 mins";
-    if (dist > 3) etaMinutes = "15-20 mins";
-    else if (dist > 1.5) etaMinutes = "10-15 mins";
+    const etaMinutes = "2-3 Days"; // Default static ETA for single location setup
 
     return res.status(200).json({
       success: true,
       isServiceable: true,
       estimatedDeliveryTime: etaMinutes,
       warehouse: {
-        id: warehouse.warehouse_id,
-        name: warehouse.name,
-        distanceKm: dist,
-        deliveryRangeKm: warehouse.deliveryRangeKm,
+        id: defaultWarehouse.warehouse_id,
+        name: defaultWarehouse.name,
+        distanceKm: 0,
+        deliveryRangeKm: defaultWarehouse.deliveryRangeKm || 10000,
       },
-      message: `Express Delivery in ${etaMinutes} ⚡`,
+      message: `Standard Delivery in ${etaMinutes} ⚡`,
     });
   } catch (error) {
     console.error("Check Serviceability Error:", error);

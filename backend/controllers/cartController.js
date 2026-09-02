@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 const WarehouseStock = require("../models/WarehouseStock");
+const Warehouse = require("../models/Warehouse");
 
 
 
@@ -60,13 +61,14 @@ const addToCart = async (req, res) => {
       });
     }
 
-    const warehouseId = req.headers["x-warehouse-id"];
-    if (!warehouseId) {
-      return res.status(400).json({
+    const defaultWarehouse = await Warehouse.findOne({ isActive: true }).lean();
+    if (!defaultWarehouse) {
+      return res.status(500).json({
         success: false,
-        message: "Warehouse ID is missing. Please set delivery location.",
+        message: "System configuration error: No active warehouse found.",
       });
     }
+    const warehouseId = defaultWarehouse._id;
 
     const cart = await findOrCreateCart(session);
     
@@ -137,13 +139,14 @@ const increaseQuantity = async (req, res) => {
       });
     }
 
-    const warehouseId = req.headers["x-warehouse-id"];
-    if (!warehouseId) {
-      return res.status(400).json({
+    const defaultWarehouse = await Warehouse.findOne({ isActive: true }).lean();
+    if (!defaultWarehouse) {
+      return res.status(500).json({
         success: false,
-        message: "Warehouse ID is missing. Please set delivery location.",
+        message: "System configuration error: No active warehouse found.",
       });
     }
+    const warehouseId = defaultWarehouse._id;
 
     const cart = await findOrCreateCart(session);
 

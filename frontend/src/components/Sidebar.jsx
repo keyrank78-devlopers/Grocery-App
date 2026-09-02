@@ -18,11 +18,11 @@ export default function Sidebar({ isOpen, onClose }) {
   // Role & Permissions ke hisaab se filter + section group
   const allowedItems = NAV_CONFIG.filter((item) => {
     if (role === "admin") return true;
-    
+
     if (user?.permissions) {
       return !!user.permissions[item.id]?.canView;
     }
-    
+
     return item.roles.includes(role);
   });
   const sections = allowedItems.reduce((acc, item) => {
@@ -39,7 +39,7 @@ export default function Sidebar({ isOpen, onClose }) {
     <aside className={`sidebar ${isOpen ? "open" : ""}`}>
       {/* Brand */}
       <div className="sidebar-brand">
-        <div className="sidebar-brand-inner">
+        <div className="sidebar-brand-inner" style={{ justifyContent: "space-evenly" }}>
           <div className="sidebar-logo-wrap" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <img
               src={logo}
@@ -47,7 +47,7 @@ export default function Sidebar({ isOpen, onClose }) {
               className="sidebar-logo"
               onError={(e) => { e.target.style.display = "none"; }}
             />
-            <span className="sidebar-app-name">Keyrank</span>
+
           </div>
           <button className="mobile-close-btn" onClick={onClose} aria-label="Close menu">
             &times;
