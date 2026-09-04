@@ -63,7 +63,7 @@ router.get("/view-address", verifyCustomerToken, getAddresses);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [addressLine1, city, state, pincode, longitude, latitude]
+ *             required: [addressLine1, city, state, pincode]
  *             properties:
  *               name:
  *                 type: string

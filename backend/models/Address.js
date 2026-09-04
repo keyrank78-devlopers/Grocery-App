@@ -62,11 +62,9 @@ const addressSchema = new mongoose.Schema(
       type: {
         type: String,
         enum: ["Point"],
-        default: "Point",
       },
       coordinates: {
         type: [Number],
-        required: [true, "Coordinates are required [longitude, latitude]"],
       },
     },
   },
