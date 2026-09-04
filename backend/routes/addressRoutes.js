@@ -105,12 +105,6 @@ router.get("/view-address", verifyCustomerToken, getAddresses);
  *                 type: boolean
  *                 default: false
  *                 example: true
- *               longitude:
- *                 type: number
- *                 example: 77.3910
- *               latitude:
- *                 type: number
- *                 example: 28.5355
  *     responses:
  *       201:
  *         description: Address created successfully
@@ -201,12 +195,6 @@ router.get("/single-address/:id", verifyCustomerToken, getAddressById);
  *               isDefault:
  *                 type: boolean
  *                 example: true
- *               longitude:
- *                 type: number
- *                 example: 77.3910
- *               latitude:
- *                 type: number
- *                 example: 28.5355
  *     responses:
  *       200:
  *         description: Address updated successfully
