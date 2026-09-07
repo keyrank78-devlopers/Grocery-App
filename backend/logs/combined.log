@@ -1751,3 +1751,17 @@ TypeError: Cannot set property query of #<IncomingMessage> which has only a gett
 [2026-09-02 17:29:19] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [32m200[0m 1.016 ms - -[0m
 [2026-09-02 17:29:19] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [32m200[0m 1.052 ms - -[0m
 [2026-09-02 17:29:19] HTTP: [0mGET /api-docs/favicon-32x32.png [32m200[0m 1.760 ms - 628[0m
+[2026-09-07 09:46:07] INFO: Server running on port 5000 in development mode
+[2026-09-07 09:47:03] HTTP: [0mGET /api-docs/ [36m304[0m 6.696 ms - -[0m
+[2026-09-07 09:47:03] HTTP: [0mGET /api-docs/swagger-ui.css [32m200[0m 5.936 ms - -[0m
+[2026-09-07 09:47:03] HTTP: [0mGET /api-docs/swagger-ui-init.js [32m200[0m 1.033 ms - -[0m
+[2026-09-07 09:47:03] HTTP: [0mGET /api-docs/swagger-ui-standalone-preset.js [32m200[0m 14.675 ms - -[0m
+[2026-09-07 09:47:03] HTTP: [0mGET /api-docs/swagger-ui-bundle.js [32m200[0m 10.453 ms - -[0m
+[2026-09-07 09:47:22] HTTP: [0mPOST /api/v1/auth/customer/send-otp [32m200[0m 109.224 ms - 65[0m
+[2026-09-07 09:47:39] HTTP: [0mPOST /api/v1/auth/customer/verify-otp [32m200[0m 153.997 ms - 634[0m
+[2026-09-07 09:47:53] HTTP: [0mGET /api/v1/products?page=1&limit=10&status=active [32m200[0m 88.912 ms - -[0m
+[2026-09-07 09:48:13] HTTP: [0mGET /api/v1/orders/view-orders?page=1&limit=10 [32m200[0m 78.366 ms - -[0m
+[2026-09-07 09:48:37] HTTP: [0mPUT /api/v1/orders/6a9d264cf24f38a7690c8e1b/cancel [31m500[0m 263.149 ms - 75[0m
+[2026-09-07 09:49:42] INFO: Server running on port 5000 in development mode
+[2026-09-07 09:52:18] HTTP: [0mPUT /api/v1/orders/6a9d264cf24f38a7690c8e1b/cancel [32m200[0m 299.117 ms - -[0m
+[2026-09-07 09:52:32] WARN: SIGINT received. Shutting down gracefully...
